@@ -1,0 +1,228 @@
+<div class="flex flex-col items-center justify-center w-full min-h-[80vh] px-4 py-12">
+
+  <div
+    class="relative w-full max-w-2xl p-8 backdrop-blur-2xl bg-slate-900/40 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+
+    <!-- Decorator blobs -->
+    <div class="absolute -top-20 -left-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-fuchsia-500/20 rounded-full blur-3xl pointer-events-none">
+    </div>
+
+    <div class="relative z-10 flex flex-col gap-8">
+
+      <!-- Header -->
+      <div class="text-center">
+        <h1
+          class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-fuchsia-400 mb-2">
+          Video Downloader
+        </h1>
+        <p class="text-slate-400">Download high-quality video and audio instantly.</p>
+      </div>
+
+      <!-- Input Section -->
+      <div class="flex flex-col gap-4">
+        <div class="relative group flex items-center gap-2">
+          <div class="relative flex-1">
+            <input id="url" type="url" required placeholder="Paste YouTube URL here..." [value]="url()"
+              (input)="updateUrl($any($event.target).value)" (keydown.enter)="!hasOptions() && fetchOptions()"
+              class="w-full px-6 py-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300 shadow-inner" />
+            <div class="absolute inset-0 rounded-2xl ring-1 ring-white/5 pointer-events-none"></div>
+          </div>
+
+          <button (click)="clearUrl()"
+            class="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
+            title="Clear and Reset">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        @if (!hasOptions()) {
+        <button (click)="fetchOptions()" [disabled]="isLoading() || !url()"
+          class="w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
+                   bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2">
+          @if (isLoading()) {
+          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+            </path>
+          </svg>
+          Fetching...
+          } @else {
+          Fetch Options
+          }
+        </button>
+        }
+      </div>
+
+      @if (hasOptions()) {
+      <div class="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+        <div class="relative group">
+          <select (change)="selectedOption.set($any($event.target).value)"
+            class="w-full px-6 py-4 appearance-none bg-slate-800/50 border border-slate-700/50 rounded-2xl text-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300 shadow-inner cursor-pointer">
+            <option value="" disabled selected>Select an option...</option>
+
+            @if (videoAudio().length) {
+            <optgroup label="Video + Audio" class="bg-slate-900 text-indigo-400 font-semibold">
+              @for (o of videoAudio(); track o.id) {
+              <option [value]="o.id" class="text-slate-200 py-2 bg-slate-800">
+                {{ o.label }}
+              </option>
+              }
+            </optgroup>
+            }
+
+            @if (videoOnly().length) {
+            <optgroup label="Video Only" class="bg-slate-900 text-fuchsia-400 font-semibold">
+              @for (o of videoOnly(); track o.id) {
+              <option [value]="o.id" class="text-slate-200 bg-slate-800">
+                {{ o.label }}
+              </option>
+              }
+            </optgroup>
+            }
+
+            @if (audioOnly().length) {
+            <optgroup label="Audio Only" class="bg-slate-900 text-emerald-400 font-semibold">
+              @for (o of audioOnly(); track o.id) {
+              <option [value]="o.id" class="text-slate-200 bg-slate-800">
+                {{ o.label }}
+              </option>
+              }
+            </optgroup>
+            }
+          </select>
+
+          <!-- Custom chevron arrow -->
+          <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        <button (click)="startDownload()" [disabled]="!selectedOption()" class="w-full py-4 mt-2 rounded-2xl font-bold text-lg transition-all duration-300 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-800
+                   bg-indigo-500 hover:bg-indigo-400 text-white shadow-xl shadow-indigo-500/20">
+          Start Download
+        </button>
+      </div>
+      }
+
+      <!-- Downloads List -->
+      @if ((jobs() | keyvalue).length > 0) {
+      <div class="mt-8 pt-8 border-t border-white/5 animate-in fade-in duration-500">
+        <h2 class="text-xl font-semibold text-white mb-4">Active Downloads</h2>
+        <div class="flex flex-col gap-3">
+          @for (job of jobs() | keyvalue; track job.key) {
+          <div class="p-4 rounded-xl bg-slate-800/50 border border-white/5 flex items-center justify-between">
+            <div>
+              @if (job.value.title || job.value.filename) {
+              <div class="text-white font-medium mb-1 truncate max-w-[50vw] sm:max-w-[300px]"
+                title="{{ job.value.title || job.value.filename }}">
+                {{ job.value.title || job.value.filename }}
+              </div>
+              }
+              <div class="text-sm text-slate-400 mb-1 flex items-center gap-2">
+                <span>ID: {{ job.key.slice(0, 8) }}...</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-indigo-400 font-medium capitalize">{{ job.value.status }}</span>
+                @if(job.value.status === 'downloading') {
+                <span class="text-xs text-slate-500 animate-pulse">●</span>
+                }
+              </div>
+            </div>
+            <div class="text-right flex items-center gap-4">
+              <div class="text-white font-mono font-bold">{{ job.value.progress }}</div>
+
+              @if (job.value.status === 'queued' || job.value.status === 'downloading') {
+              <button (click)="cancelJob(job.key)"
+                class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors"
+                title="Cancel Download">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd" />
+                </svg>
+              </button>
+              }
+
+              @if (job.value.status === 'finished') {
+              <a [href]="getDownloadUrl(job.key)" target="_blank"
+                class="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                title="Save File">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </a>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- History List -->
+      @if (history().length > 0) {
+      <div class="mt-8 pt-8 border-t border-white/5 animate-in fade-in duration-500">
+        <h2 class="text-xl font-semibold text-white mb-4">Downloaded Files</h2>
+        <div class="flex flex-col gap-3">
+          @for (job of history(); track job.filename) {
+          <div
+            class="p-4 rounded-xl bg-slate-800/30 border border-white/5 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
+            <div>
+              <div class="text-white font-medium mb-1 truncate max-w-[50vw] sm:max-w-[300px]"
+                title="{{ job.filename }}">
+                {{ job.filename }}
+              </div>
+              <div class="text-sm text-emerald-400 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span>Completed</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <!-- Download Button -->
+              <a [href]="getDownloadUrl(job.id || '')" target="_blank"
+                class="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                title="Save File">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </a>
+
+              <!-- Delete Button -->
+              <button (click)="deleteHistoryJob(job.id || '')"
+                class="p-2 rounded-lg bg-slate-700/50 hover:bg-red-500/20 text-slate-400 hover:text-red-500 transition-colors"
+                title="Delete File">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+    </div>
+  </div>
+</div>

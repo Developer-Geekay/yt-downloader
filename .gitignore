@@ -1,0 +1,44 @@
+# General
+.DS_Store
+thumbs.db
+*~
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Frontend (Angular/Node)
+frontend/yt-interface/node_modules/
+frontend/yt-interface/dist/
+frontend/yt-interface/.angular/
+frontend/yt-interface/.editorconfig
+frontend/yt-interface/.cache/
+frontend/yt-interface/tmp/
+frontend/yt-interface/*.log
+
+# Backend (Python)
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.Python
+backend/env/
+backend/venv/
+backend/.venv/
+backend/pip-log.txt
+backend/pip-delete-this-directory.txt
+backend/.coverage
+backend/.tox/
+backend/.pytest_cache/
+
+# Project Specific (Runtime Data)
+backend/data/*.db
+backend/data/*.sqlite
+backend/downloads/
+backend/.ytenv/
+backend/app/__pycache__/
+*.env
+.env

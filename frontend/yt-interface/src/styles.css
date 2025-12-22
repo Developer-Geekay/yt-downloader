@@ -1,0 +1,18 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-brand-primary: #6366f1;
+  --color-brand-secondary: #a855f7;
+  --color-glass-surface: rgba(30, 41, 59, 0.7);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  @apply bg-slate-950 text-slate-200 antialiased font-sans min-h-screen selection:bg-indigo-500/30;
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.15) 0%, transparent 25%);
+}
