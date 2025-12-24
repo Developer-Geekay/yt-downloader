@@ -175,7 +175,7 @@
       @if (history().length > 0) {
       <div class="mt-8 pt-8 border-t border-white/5 animate-in fade-in duration-500">
         <h2 class="text-xl font-semibold text-white mb-4">Downloaded Files</h2>
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
           @for (job of history(); track job.filename) {
           <div
             class="p-4 rounded-xl bg-slate-800/30 border border-white/5 flex items-center justify-between hover:bg-slate-800/50 transition-colors">

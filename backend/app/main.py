@@ -104,16 +104,26 @@ def history(user=Depends(basic_auth)):
 
 @app.delete("/api/job/{job_id}")
 def delete_job(job_id: str, user=Depends(basic_auth)):
+    import shutil
     db = get_db()
-    job = db.execute("SELECT filename FROM jobs WHERE id=?", (job_id,)).fetchone()
     
-    if job and job["filename"]:
-        file_path = os.path.join(DOWNLOAD_DIR, job["filename"])
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception:
-                pass  # Ignore file deletion errors
+    # Try removing the job directory first (new isolation method)
+    job_dir = os.path.join(DOWNLOAD_DIR, job_id)
+    if os.path.exists(job_dir) and os.path.isdir(job_dir):
+        try:
+            shutil.rmtree(job_dir)
+        except Exception:
+            pass
+    else:
+        # Fallback for old files (flat structure)
+        job = db.execute("SELECT filename FROM jobs WHERE id=?", (job_id,)).fetchone()
+        if job and job["filename"]:
+            file_path = os.path.join(DOWNLOAD_DIR, job["filename"])
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
     
     db.execute("DELETE FROM jobs WHERE id=?", (job_id,))
     db.commit()

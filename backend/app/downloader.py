@@ -88,14 +88,20 @@ def download_video(job_id: str, url: str, format_id: str):
         if d["status"] == "downloading":
              db.execute(
                 "UPDATE jobs SET status=?, progress=?, speed=?, eta=? WHERE id=?",
-                ("downloading", d.get("_percent_str"), d.get("_speed_str"), d.get("_eta_str"), job_id)
+                (
+                    "downloading", 
+                    clean(d.get("_percent_str", "0%")), 
+                    clean(d.get("_speed_str", "N/A")), 
+                    clean(d.get("_eta_str", "N/A")), 
+                    job_id
+                )
             )
         db.commit()
         db.close()
 
     ydl_opts = {
         "format": format_id,
-        "outtmpl": f"{DOWNLOAD_DIR}/%(title).200s [%(id)s].%(ext)s",
+        "outtmpl": f"{DOWNLOAD_DIR}/{job_id}/%(title).200s [%(id)s].%(ext)s",
         "restrictfilenames": True,
         "windowsfilenames": True,
         "progress_hooks": [hook],
@@ -112,9 +118,13 @@ def download_video(job_id: str, url: str, format_id: str):
             info = ydl.extract_info(url, download=False)
             
             # 2. Calculate final filename (forcing mp4 due to merge_output_format)
-            filename = os.path.basename(ydl.prepare_filename(info))
+            # Note: prepare_filename returns full path, we need relative to DOWNLOAD_DIR
+            full_path = ydl.prepare_filename(info)
+            filename = os.path.basename(full_path)
             base, _ = os.path.splitext(filename)
-            final_filename = f"{base}.mp4"
+            
+            # Storing relative path: job_id/filename.mp4
+            final_filename = f"{job_id}/{base}.mp4"
 
             # 3. Perform download
             ydl.download([url])
