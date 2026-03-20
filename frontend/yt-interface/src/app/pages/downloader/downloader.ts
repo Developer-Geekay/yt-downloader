@@ -100,16 +100,28 @@ export class Downloader implements OnInit {
              return newJobs;
            });
            this.loadHistory();
+           // Clear taskbar progress
+           window.electronAPI?.setProgress(-1);
            return;
         }
 
         this.jobs.update(j => ({ ...j, [jobId]: status }));
+
+        // Update taskbar progress in Electron
+        if (status.progress && window.electronAPI?.isElectron) {
+          const pct = parseFloat(status.progress.replace('%', ''));
+          if (!isNaN(pct)) {
+            window.electronAPI.setProgress(pct / 100);
+          }
+        }
 
         if (
           status.status === 'error' ||
           status.status === 'cancelled'
         ) {
           clearInterval(timer);
+          // Clear taskbar progress
+          window.electronAPI?.setProgress(-1);
         }
       });
     }, 2000);

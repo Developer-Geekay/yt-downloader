@@ -2,10 +2,38 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { OptionsResponse, DownloadResponse, JobStatus } from './models';
 
+/** Type declaration for the Electron preload API */
+declare global {
+  interface Window {
+    electronAPI?: {
+      getBackendPort: () => Promise<number>;
+      chooseDirectory: () => Promise<string | null>;
+      getAppVersion: () => Promise<string>;
+      setProgress: (progress: number) => void;
+      isElectron: boolean;
+    };
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
   private base = 'http://localhost:8000';
+
+  constructor() {
+    this.initBaseUrl();
+  }
+
+  private async initBaseUrl() {
+    if (window.electronAPI?.isElectron) {
+      try {
+        const port = await window.electronAPI.getBackendPort();
+        this.base = `http://127.0.0.1:${port}`;
+      } catch {
+        // Fallback to default
+      }
+    }
+  }
 
   fetchOptions(url: string) {
     return this.http.post<OptionsResponse>(

@@ -1,0 +1,50 @@
+{
+  "name": "private-video-downloader",
+  "version": "1.0.0",
+  "description": "A standalone desktop video downloader powered by Electron, Angular, and yt-dlp",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "build:frontend": "cd frontend/yt-interface && npm run build -- --configuration production",
+    "dev:frontend": "cd frontend/yt-interface && npx ng serve --port 4200",
+    "dev:electron": "npm run build:frontend && electron .",
+    "dev:electron:live": "set ELECTRON_DEV=true && electron .",
+    "start": "electron .",
+    "dist": "npm run build:frontend && electron-builder",
+    "dist:win": "npm run build:frontend && electron-builder --win",
+    "dist:mac": "npm run build:frontend && electron-builder --mac",
+    "dist:linux": "npm run build:frontend && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.private-video-downloader.app",
+    "productName": "Video Downloader",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/yt-interface/dist/**/*",
+      "backend/**/*",
+      "!backend/.ytenv/**",
+      "!backend/__pycache__/**",
+      "!backend/downloads/**",
+      "!backend/data/**"
+    ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "assets/icon.png"
+    }
+  }
+}

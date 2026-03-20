@@ -1,23 +1,48 @@
 # General
 .DS_Store
 thumbs.db
+desktop.ini
 *~
 *.log
+*.tmp
+*.bak
 
 # IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+.project
+.settings/
+.classpath
 
-# Frontend (Angular/Node)
+# Node / Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# Electron / Build Outputs
+release/
+dist/
+out/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+
+# Bundled Resources (Binaries)
+resources/ffmpeg/
+resources/python/
+
+# Frontend (Angular)
 frontend/yt-interface/node_modules/
 frontend/yt-interface/dist/
 frontend/yt-interface/.angular/
 frontend/yt-interface/.editorconfig
 frontend/yt-interface/.cache/
 frontend/yt-interface/tmp/
-frontend/yt-interface/*.log
 
 # Backend (Python)
 backend/__pycache__/
@@ -28,6 +53,7 @@ backend/.Python
 backend/env/
 backend/venv/
 backend/.venv/
+backend/.ytenv/
 backend/pip-log.txt
 backend/pip-delete-this-directory.txt
 backend/.coverage
@@ -38,7 +64,8 @@ backend/.pytest_cache/
 backend/data/*.db
 backend/data/*.sqlite
 backend/downloads/
-backend/.ytenv/
 backend/app/__pycache__/
+
+# Environment Variables
 *.env
 .env

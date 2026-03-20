@@ -7,13 +7,18 @@ from .auth import basic_auth
 from .models import OptionsRequest, DownloadRequest
 from .db import init_db, get_db
 from .downloader import get_download_options, download_video
-from .config import APP_NAME, DOWNLOAD_DIR
+from .config import APP_NAME, DOWNLOAD_DIR, IS_ELECTRON_MODE
 
 app = FastAPI(title=APP_NAME)
 
+# In Electron mode, allow all localhost origins (dynamic port)
+electron_origins = ["http://localhost:4200", "http://127.0.0.1:4200"]
+if IS_ELECTRON_MODE:
+    electron_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200", "http://127.0.0.1:4200"],
+    allow_origins=electron_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
