@@ -33,26 +33,89 @@ class BackendManager {
   }
 
   /**
-   * Find the Python executable — prefer project venv over system Python.
+   * Find the Python executable — prefer bundled distribution, then project venv, then system Python.
    */
   _findPython(backendDir) {
     const fs = require('fs');
-    const venvNames = ['.ytenv', '.venv', 'venv'];
     const isWin = process.platform === 'win32';
+    const projectRoot = path.dirname(backendDir);
 
+    // 1. Check bundled Python (resources/python) — highest priority for production (if bundled)
+    const bundledPath = isWin
+      ? path.join(projectRoot, 'resources', 'python', 'python.exe')
+      : path.join(projectRoot, 'resources', 'python', 'bin', 'python');
+    if (fs.existsSync(bundledPath)) {
+      return bundledPath;
+    }
+
+    // 2. Check project virtual environments (for development)
+    const venvNames = ['.ytenv', '.venv', 'venv'];
     for (const name of venvNames) {
-      const pythonPath = isWin
+      const venvPath = isWin
         ? path.join(backendDir, name, 'Scripts', 'python.exe')
         : path.join(backendDir, name, 'bin', 'python');
-      if (fs.existsSync(pythonPath)) {
-        console.log(`Found venv Python: ${pythonPath}`);
-        return pythonPath;
+      if (fs.existsSync(venvPath)) {
+        return venvPath;
       }
     }
 
-    // Fallback to system Python
+    // 3. Fallback to system Python
     return isWin ? 'python' : 'python3';
   }
+
+  /**
+   * Check if a dependency exists on the system and satisfies version requirements.
+   */
+  async checkDependencies() {
+    const deps = {
+      python: { found: false, version: null, path: null },
+      ffmpeg: { found: false, version: null, path: null },
+      node: { found: true, version: process.version, path: process.execPath }
+    };
+
+    // Check Python
+    try {
+      const backendDir = path.join(__dirname, '..', 'backend');
+      const pythonPath = this._findPython(backendDir);
+      const { stdout } = await this._execPromise(`${pythonPath} --version`);
+      deps.python.found = true;
+      deps.python.version = stdout.trim();
+      deps.python.path = pythonPath;
+    } catch (e) {
+      console.warn('Python not found or version check failed:', e.message);
+    }
+
+    // Check FFmpeg
+    try {
+      const { stdout } = await this._execPromise('ffmpeg -version');
+      deps.ffmpeg.found = true;
+      deps.ffmpeg.version = stdout.split('\n')[0].trim();
+      deps.ffmpeg.path = 'ffmpeg';
+    } catch (e) {
+      // Check bundled fallback
+      const projectRoot = path.dirname(path.join(__dirname, '..', 'backend'));
+      const bundledFFmpeg = path.join(projectRoot, 'resources', 'ffmpeg', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+      const fs = require('fs');
+      if (fs.existsSync(bundledFFmpeg)) {
+        deps.ffmpeg.found = true;
+        deps.ffmpeg.path = bundledFFmpeg;
+        // Could also check version of bundled here if needed
+      }
+    }
+
+    return deps;
+  }
+
+  _execPromise(command) {
+    const { exec } = require('child_process');
+    return new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) reject(error);
+        else resolve({ stdout, stderr });
+      });
+    });
+  }
+
 
   /**
    * Start the Python FastAPI backend as a child process.

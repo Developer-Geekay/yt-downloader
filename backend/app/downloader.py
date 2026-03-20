@@ -109,11 +109,16 @@ def download_video(job_id: str, url: str, format_id: str):
         "noplaylist": True,
         "merge_output_format": "mp4",
         "no_continue": True,
-        "overwrites": True
+        "overwrites": True,
+        "ffmpeg_location": FFMPEG_LOCATION,
+        "cachedir": TEMP_DIR,
     }
 
     try:
+        from .config import FFMPEG_LOCATION, TEMP_DIR
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+
+
             # 1. Get info to calculate filename
             info = ydl.extract_info(url, download=False)
             

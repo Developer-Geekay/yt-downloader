@@ -4,6 +4,10 @@
   "description": "A standalone desktop video downloader powered by Electron, Angular, and yt-dlp",
   "main": "electron/main.js",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Developer-Geekay/yt-downloader.git"
+  },
   "scripts": {
     "build:frontend": "cd frontend/yt-interface && npm run build -- --configuration production",
     "dev:frontend": "cd frontend/yt-interface && npx ng serve --port 4200",
@@ -25,6 +29,13 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Developer-Geekay",
+        "repo": "yt-downloader"
+      }
+    ],
     "files": [
       "electron/**/*",
       "frontend/yt-interface/dist/**/*",
@@ -43,7 +54,7 @@
       "icon": "assets/icon.icns"
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": ["AppImage", "deb", "portable"],
       "icon": "assets/icon.png"
     }
   }

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup - Video Downloader</title>
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --bg: #020617;
+      --text: #f8fafc;
+      --card: #0f172a;
+      --border: #1e293b;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      background: var(--card);
+      padding: 2.5rem;
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+      width: 450px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    h1 { margin-top: 0; font-size: 1.5rem; background: linear-gradient(135deg, #60a5fa, #3b82f6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; }
+    .field { margin-bottom: 1.5rem; }
+    label { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; }
+    .input-group { display: flex; gap: 0.5rem; }
+    input {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 0.4rem;
+      padding: 0.6rem;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 0.4rem;
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
+    button.secondary { background: #334155; }
+    .actions { display: flex; justify-content: flex-end; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to Video Downloader</h1>
+    <p>Please select where you would like to store your downloads and temporary files.</p>
+    
+    <div class="field">
+      <label>Download Location</label>
+      <div class="input-group">
+        <input type="text" id="downloadPath" readonly placeholder="Choose a folder...">
+        <button class="secondary" onclick="chooseDir('downloadPath')">Browse</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Temporary Files Location</label>
+      <div class="input-group">
+        <input type="text" id="tempPath" readonly placeholder="Choose a folder...">
+        <button class="secondary" onclick="chooseDir('tempPath')">Browse</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="finishBtn" onclick="saveConfig()">Save & Launch</button>
+    </div>
+  </div>
+
+  <script>
+    async function chooseDir(id) {
+      const path = await window.electronAPI.chooseDirectory();
+      if (path) {
+        document.getElementById(id).value = path;
+      }
+    }
+
+    async function saveConfig() {
+      const downloadPath = document.getElementById('downloadPath').value;
+      const tempPath = document.getElementById('tempPath').value;
+
+      if (!downloadPath || !tempPath) {
+        alert('Please select both paths to continue.');
+        return;
+      }
+
+      const btn = document.getElementById('finishBtn');
+      btn.innerText = 'Finishing...';
+      btn.disabled = true;
+
+      const success = await window.electronAPI.saveSetupConfig({ downloadPath, tempPath });
+      if (!success) {
+        alert('Failed to save configuration. Please try again.');
+        btn.innerText = 'Save & Launch';
+        btn.disabled = false;
+      }
+    }
+
+    // Set defaults on load
+    window.addEventListener('load', async () => {
+      // In a real app, we might ask the main process for recommended defaults here.
+    });
+  </script>
+</body>
+</html>

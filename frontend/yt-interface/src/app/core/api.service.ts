@@ -10,10 +10,14 @@ declare global {
       chooseDirectory: () => Promise<string | null>;
       getAppVersion: () => Promise<string>;
       setProgress: (progress: number) => void;
+      isConfigured: () => Promise<boolean>;
+      saveSetupConfig: (config: any) => Promise<boolean>;
+      checkDependencies: () => Promise<any>;
       isElectron: boolean;
     };
   }
 }
+
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -74,4 +78,9 @@ export class ApiService {
   deleteJob(jobId: string) {
     return this.http.delete(`${this.base}/api/job/${jobId}`);
   }
+
+  deleteAllJobs() {
+    return this.http.delete(`${this.base}/api/history`);
+  }
 }
+

@@ -20,10 +20,22 @@ const PYTHON_URLS = {
 
 const RESOURCES_DIR = path.join(__dirname, '..', 'resources', 'python');
 const BACKEND_DIR = path.join(__dirname, '..', 'backend');
+const CACHE_DIR = path.join(__dirname, '..', 'cache');
 
 async function downloadFile(url, dest) {
+  // Check if file exists in cache first
+  const fileName = path.basename(dest);
+  const cachePath = path.join(CACHE_DIR, fileName);
+
+  if (fs.existsSync(cachePath)) {
+    console.log(`Using cached file: ${cachePath}`);
+    fs.copyFileSync(cachePath, dest);
+    return;
+  }
+
   return new Promise((resolve, reject) => {
     console.log(`Downloading: ${url}`);
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
     const file = fs.createWriteStream(dest);
 
     const request = (url) => {

@@ -107,7 +107,16 @@ def history(user=Depends(basic_auth)):
     db.close()
     return [dict(j) for j in jobs]
 
+@app.delete("/api/history")
+def delete_all_history(user=Depends(basic_auth)):
+    db = get_db()
+    db.execute("DELETE FROM jobs WHERE status='finished'")
+    db.commit()
+    db.close()
+    return {"status": "success"}
+
 @app.delete("/api/job/{job_id}")
+
 def delete_job(job_id: str, user=Depends(basic_auth)):
     import shutil
     db = get_db()
