@@ -81,6 +81,7 @@ class BackendManager {
           env: {
             ...process.env,
             ELECTRON_MODE: 'true',
+            ELECTRON_PORT: String(this.port),
             PYTHONUNBUFFERED: '1',
           },
           stdio: ['pipe', 'pipe', 'pipe'],

@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { OptionsResponse, DownloadResponse, JobStatus } from './models';
 
@@ -18,7 +18,11 @@ declare global {
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
-  private base = 'http://localhost:8000';
+  private _base = signal('http://localhost:8000');
+
+  get base() {
+    return this._base();
+  }
 
   constructor() {
     this.initBaseUrl();
@@ -28,7 +32,7 @@ export class ApiService {
     if (window.electronAPI?.isElectron) {
       try {
         const port = await window.electronAPI.getBackendPort();
-        this.base = `http://127.0.0.1:${port}`;
+        this._base.set(`http://127.0.0.1:${port}`);
       } catch {
         // Fallback to default
       }
