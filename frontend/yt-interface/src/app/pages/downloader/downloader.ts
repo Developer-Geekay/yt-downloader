@@ -31,6 +31,7 @@ export class Downloader implements OnInit {
   
   currentTitle = signal('');
   isLoading = signal(false);
+  fetchError = signal<string | null>(null);
 
   jobs = signal<Record<string, JobStatus>>({});
   history = signal<JobStatus[]>([]);
@@ -54,6 +55,7 @@ export class Downloader implements OnInit {
   fetchOptions() {
     if (!this.url()) return;
     this.isLoading.set(true);
+    this.fetchError.set(null);
     this.api.fetchOptions(this.url()).subscribe({
       next: (res) => {
         this.optionsId.set(res.options_id);
@@ -63,7 +65,11 @@ export class Downloader implements OnInit {
         this.currentTitle.set(res.title);
         this.isLoading.set(false);
       },
-      error: () => this.isLoading.set(false)
+      error: (err) => {
+        const detail = err?.error?.detail ?? err?.message ?? 'Failed to fetch video options.';
+        this.fetchError.set(detail);
+        this.isLoading.set(false);
+      }
     });
   }
 
@@ -154,6 +160,7 @@ export class Downloader implements OnInit {
     this.videoOnly.set([]);
     this.audioOnly.set([]);
     this.currentTitle.set('');
+    this.fetchError.set(null);
   }
 
   getDownloadUrl(jobId: string) {

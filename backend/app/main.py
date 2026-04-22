@@ -34,7 +34,10 @@ def health():
 
 @app.post("/api/options")
 def options(data: OptionsRequest, user=Depends(basic_auth)):
-    return get_download_options(data.url)
+    try:
+        return get_download_options(data.url)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/download")
 def start_download(data: DownloadRequest, bg: BackgroundTasks, user=Depends(basic_auth)):

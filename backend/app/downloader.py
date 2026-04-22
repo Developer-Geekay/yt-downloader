@@ -6,7 +6,13 @@ from .db import get_db
 from .config import MAX_VIDEO_DURATION_SEC, DOWNLOAD_DIR
 
 def clean(msg: str):
-    return re.sub(r'\x1B\[[0-?]*[ -/]*[@-~]', '', msg)
+    # Strip ANSI colour codes
+    msg = re.sub(r'\x1B\[[0-?]*[ -/]*[@-~]', '', msg)
+    # Strip yt-dlp's "ERROR: " prefix
+    msg = re.sub(r'^ERROR:\s*', '', msg)
+    # Strip the GitHub reporting boilerplate that yt-dlp appends after "; please report"
+    msg = re.split(r';\s*please report this issue', msg, flags=re.IGNORECASE)[0]
+    return msg.strip()
 
 def validate_url(url: str):
     for ie in extractors.gen_extractors():
