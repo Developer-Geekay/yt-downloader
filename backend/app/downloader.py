@@ -1,9 +1,10 @@
+import os
 import re
 import uuid
 import yt_dlp
 import yt_dlp.extractor as extractors
 from .db import get_db
-from .config import MAX_VIDEO_DURATION_SEC, DOWNLOAD_DIR
+from .config import MAX_VIDEO_DURATION_SEC, DOWNLOAD_DIR, TEMP_DIR, FFMPEG_LOCATION
 
 def clean(msg: str):
     # Strip ANSI colour codes
@@ -81,8 +82,6 @@ def get_download_options(url: str):
     return response
 
 def download_video(job_id: str, url: str, format_id: str):
-    import os
-
     def hook(d):
         db = get_db()
         # Check for cancellation
@@ -121,7 +120,6 @@ def download_video(job_id: str, url: str, format_id: str):
     }
 
     try:
-        from .config import FFMPEG_LOCATION, TEMP_DIR
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
 
