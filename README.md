@@ -1,115 +1,151 @@
-# 🎥 Private Video Downloader
+# Private Video Downloader
 
-A premium, self-hosted video downloader application featuring a modern Glassmorphism UI, progress tracking, and history management. Built with **Angular 21** and **FastAPI**.
+A self-hosted video downloader with a modern UI, real-time progress tracking, and download history. Runs as a standalone desktop app (Electron) or as a local web app.
 
-## ✨ Features
+Built with **Angular 21**, **FastAPI**, and **yt-dlp**. Bundles its own Python and FFmpeg — no external tools need to be installed by the user.
 
-- **Modern & Responsive UI**: Glassmorphism design with dark mode, animations, and Tailwind CSS v4.
-- **Smart Options**: Fetches and deduplicates video/audio formats.
-- **Progress Tracking**: Real-time download progress, speed, and ETA without ANSI clutter.
-- **History Management**: 
-  - Persists downloaded files list.
-  - Automatically moves finished downloads to history.
-  - Scrollable history view.
-- **Robust File Handling**:
-  - **Cancellation**: Cancel active downloads instantly.
-  - **Deletion**: Delete files from disk and history (removes isolated job folders).
-  - **Isolation**: Each download is sandboxed in its own folder to prevent conflicts.
-- **File Serving**: Direct download link for finished files.
+## Features
 
-## 🛠️ Technology Stack
+- Glassmorphism dark UI with Tailwind CSS v4
+- Fetches and deduplicates video/audio format options per URL
+- Real-time progress, speed, and ETA
+- Download cancellation and file deletion
+- Each download isolated in its own folder
+- Persisted history with direct file download links
 
-- **Frontend**: Angular v21, Tailwind CSS v4.1, Signals.
-- **Backend**: Python 3.10+, FastAPI, yt-dlp, SQLite.
+## Technology Stack
 
-## 📋 Prerequisites
+| Layer | Stack |
+|---|---|
+| Desktop shell | Electron 35 |
+| Frontend | Angular 21, Tailwind CSS v4, Signals |
+| Backend | Python 3.12, FastAPI, uvicorn, yt-dlp, SQLite |
+| Bundled tools | Python (python-build-standalone), FFmpeg (ffmpeg-static) |
 
-Before running the application, ensure you have the following installed:
+## Prerequisites
 
-1.  **Node.js** (v18+): [Download Here](https://nodejs.org/)
-2.  **Python** (v3.10+): [Download Here](https://www.python.org/)
-3.  **FFmpeg**: Required for merging video and audio.
-    - **Windows**: [Download & Add to Path](https://ffmpeg.org/download.html)
-    - **Linux**: `sudo apt install ffmpeg`
-    - **MacOS**: `brew install ffmpeg`
+Only **Node.js v18+** is required. Python and FFmpeg are downloaded automatically by the setup script.
 
-## 🚀 Installation & Setup
+- [Download Node.js](https://nodejs.org/)
 
-### 1. Backend Setup
+---
 
-Navigate to the `backend` directory:
+## Development
 
-```bash
-cd backend
-```
+### First-time setup
 
-Create a virtual environment:
-
-```bash
-# Windows
-python -m venv .venv
-.venv\Scripts\activate
-
-# Linux/Mac
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-*(Note: If `requirements.txt` is missing, install manually: `pip install fastapi uvicorn yt-dlp`)*
-
-### 2. Frontend Setup
-
-Navigate to the `frontend/yt-interface` directory:
-
-```bash
-cd ../frontend/yt-interface
-```
-
-Install dependencies:
+Run once from the project root. Downloads Python 3.12 and FFmpeg into `resources/`, installs all backend pip packages inside the bundled Python.
 
 ```bash
 npm install
+npm run setup
 ```
 
-## ▶️ Running the Application
+> Downloads are cached in `cache/` — subsequent runs are instant.
 
-### 1. Start Support Backend
+### Running in web mode (browser)
 
-From the `backend` directory (with venv activated):
+Start the backend and frontend in separate terminals:
 
 ```bash
-uvicorn app.main:app --reload --port 8000
+# Terminal 1 — FastAPI backend (http://localhost:8000)
+npm run dev:backend
+
+# Terminal 2 — Angular dev server (http://localhost:4200)
+npm run dev:frontend
 ```
-*The backend API will run at `http://localhost:8000`*
 
-### 2. Start Frontend
+Open `http://localhost:4200` in your browser.
 
-From the `frontend/yt-interface` directory:
+Default credentials: `admin` / `change_this_password`
+Override with env vars: `VD_USER` and `VD_PASS`
+
+### Running as an Electron desktop app
+
+**Option A — hot reload** (Angular dev server + Electron, frontend changes reflect instantly):
 
 ```bash
-npm start
+# Terminal 1
+npm run dev:frontend
+
+# Terminal 2 — once Angular is ready at :4200
+npm run dev:electron:live
 ```
-*The application will run at `http://localhost:4200`*
 
-## 📖 Usage Guide
+**Option B — production build + Electron** (slower start, no hot reload):
 
-1.  **Paste URL**: Enter a YouTube (or other supported) video URL.
-2.  **Fetch Options**: Press Enter or click the fetch button.
-3.  **Select Format**: Choose your desired quality from the dropdown.
-4.  **Download**: Click "Start Download".
-5.  **Manage**:
-    - **Cancel**: Click the red X to stop an active download.
-    - **Save**: Click the green download icon to save the file to your device.
-    - **Delete**: Click the trash icon to remove the file and history entry.
+```bash
+npm run dev:electron
+```
 
-## 🔒 Configuration
+---
 
-- **Download Directory**: Default is `backend/downloads/`.
-- **Database**: Local SQLite DB at `backend/data/app.db`.
-- **Authentication**: Usage of `VD_USER` and `VD_PASS` env variables is supported (default: `admin` / `change_this_password`).
+## Production Builds
+
+Builds are produced by GitHub Actions on every version tag push. All three platforms are built in parallel on native runners — no cross-compilation.
+
+### Releasing a new version
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+This triggers the workflow which:
+1. Downloads and bundles Python 3.12 (standalone, no system Python needed)
+2. Bundles FFmpeg via `ffmpeg-static` (correct binary per platform/arch)
+3. Builds the Angular frontend
+4. Packages with `electron-builder` and publishes to GitHub Releases
+
+### Platform outputs
+
+| Platform | Runner | Output |
+|---|---|---|
+| Windows | `windows-latest` | `.exe` (NSIS installer) + portable `.exe` |
+| macOS | `macos-latest` (Apple Silicon) | `.dmg` |
+| Linux | `ubuntu-latest` | `.AppImage` + `.deb` |
+
+### macOS signing and notarization
+
+Without signing, macOS Gatekeeper will show a warning on install. The app still works — users can right-click → Open to bypass it. For seamless installs, add these as GitHub repo secrets (`Settings → Secrets and variables → Actions`):
+
+| Secret | Description |
+|---|---|
+| `CSC_LINK` | Base64-encoded `.p12` certificate: `base64 -i cert.p12` |
+| `CSC_KEY_PASSWORD` | Password for the `.p12` |
+| `APPLE_ID` | Apple ID email (requires Apple Developer account) |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password from appleid.apple.com |
+| `APPLE_TEAM_ID` | 10-character team ID from developer.apple.com |
+
+The workflow passes these to `electron-builder` automatically. If the secrets are absent, the build succeeds but skips signing and notarization.
+
+### Building locally
+
+```bash
+npm run setup           # bundle Python + FFmpeg (if not done already)
+npm run dist:mac        # or dist:win / dist:linux
+```
+
+Output goes to `release/`.
+
+---
+
+## Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `VD_USER` | `admin` | Basic auth username |
+| `VD_PASS` | `change_this_password` | Basic auth password |
+| `VD_DOWNLOAD_DIR` | `backend/downloads/` | Where finished files are stored |
+| `VD_TEMP_DIR` | `backend/temp/` | yt-dlp cache dir |
+| `VD_DB_PATH` | `backend/data/app.db` | SQLite database path |
+
+In Electron mode these are configured through the first-run setup wizard and persisted to the OS user-data directory.
+
+## Usage
+
+1. Paste a video URL and press Enter
+2. Select a format from the dropdown (combined video+audio, video only, or audio only)
+3. Click **Start Download**
+4. Track progress in the active jobs panel
+5. Use the download icon to save the file, trash icon to delete it

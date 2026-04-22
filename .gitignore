@@ -32,9 +32,10 @@ out/
 *.AppImage
 *.deb
 
-# Bundled Resources (Binaries)
+# Bundled Resources (Binaries) — populated by npm run setup
 resources/ffmpeg/
 resources/python/
+cache/
 
 # Frontend (Angular)
 frontend/yt-interface/node_modules/

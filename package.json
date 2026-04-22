@@ -9,10 +9,14 @@
     "url": "https://github.com/Developer-Geekay/yt-downloader.git"
   },
   "scripts": {
-    "build:frontend": "cd frontend/yt-interface && npm run build -- --configuration production",
+    "setup": "node scripts/bundle-ffmpeg.js && node scripts/bundle-python.js",
+    "setup:ffmpeg": "node scripts/bundle-ffmpeg.js",
+    "setup:python": "node scripts/bundle-python.js",
+    "dev:backend": "node scripts/run-backend.js",
     "dev:frontend": "cd frontend/yt-interface && npx ng serve --port 4200",
+    "dev:electron:live": "cross-env ELECTRON_DEV=true electron .",
     "dev:electron": "npm run build:frontend && electron .",
-    "dev:electron:live": "set ELECTRON_DEV=true && electron .",
+    "build:frontend": "cd frontend/yt-interface && npm run build -- --configuration production",
     "start": "electron .",
     "dist": "npm run build:frontend && electron-builder",
     "dist:win": "npm run build:frontend && electron-builder --win",
@@ -20,8 +24,10 @@
     "dist:linux": "npm run build:frontend && electron-builder --linux"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "^35.0.0",
-    "electron-builder": "^26.0.0"
+    "electron-builder": "^26.0.0",
+    "ffmpeg-static": "^5.2.0"
   },
   "build": {
     "appId": "com.private-video-downloader.app",
@@ -40,10 +46,21 @@
       "electron/**/*",
       "frontend/yt-interface/dist/**/*",
       "backend/**/*",
+      "resources/ffmpeg/**/*",
+      "resources/python/**/*",
       "!backend/.ytenv/**",
+      "!backend/.venv/**",
+      "!backend/venv/**",
       "!backend/__pycache__/**",
       "!backend/downloads/**",
-      "!backend/data/**"
+      "!backend/data/**",
+      "!resources/python/**/__pycache__/**",
+      "!resources/python/**/*.pyc"
+    ],
+    "asarUnpack": [
+      "backend/**/*",
+      "resources/ffmpeg/**/*",
+      "resources/python/**/*"
     ],
     "win": {
       "target": ["nsis", "portable"],
@@ -51,7 +68,14 @@
     },
     "mac": {
       "target": ["dmg"],
-      "icon": "assets/icon.icns"
+      "icon": "assets/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist",
+      "notarize": {
+        "teamId": "${APPLE_TEAM_ID}"
+      }
     },
     "linux": {
       "target": ["AppImage", "deb", "portable"],

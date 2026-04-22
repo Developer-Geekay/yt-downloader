@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <!-- Required for Electron's V8 JIT engine -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+
+    <!-- Required for V8 to write and execute memory -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <!-- Required for bundled Python to load its .dylib files -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
+    <!-- Required for FastAPI backend to serve HTTP on localhost -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+
+    <!-- Required to make outbound HTTP requests (yt-dlp downloads) -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+  </dict>
+</plist>

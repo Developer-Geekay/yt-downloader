@@ -32,22 +32,28 @@ for path_to_check in [os.path.dirname(DB_PATH), DOWNLOAD_DIR, TEMP_DIR]:
         os.makedirs(path_to_check, exist_ok=True)
 
 # FFmpeg Location (Self-contained)
-def find_binary(name):
-    # Try direct path
-    direct = os.path.join(PROJECT_ROOT, "resources", name, f"{name}.exe" if os.name == "nt" else name)
+# Electron backend.js passes FFMPEG_LOCATION env var pointing at the bundled binary.
+# In web/dev mode we discover it ourselves.
+def _find_ffmpeg():
+    env_path = os.getenv("FFMPEG_LOCATION")
+    if env_path and os.path.exists(env_path):
+        return env_path
+
+    binary = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
+    direct = os.path.join(PROJECT_ROOT, "resources", "ffmpeg", binary)
     if os.path.exists(direct):
         return direct
-    
-    # Search recursively in resources/name
-    search_dir = os.path.join(PROJECT_ROOT, "resources", name)
-    if os.path.exists(search_dir):
-        for root, dirs, files in os.walk(search_dir):
-            target = f"{name}.exe" if os.name == "nt" else name
-            if target in files:
-                return os.path.join(root, target)
-    return name # Fallback to system path
 
-FFMPEG_LOCATION = find_binary("ffmpeg")
+    # Recursive search (handles subdirectory layouts from some archives)
+    search_dir = os.path.join(PROJECT_ROOT, "resources", "ffmpeg")
+    if os.path.exists(search_dir):
+        for root, _dirs, files in os.walk(search_dir):
+            if binary in files:
+                return os.path.join(root, binary)
+
+    return "ffmpeg"  # system fallback
+
+FFMPEG_LOCATION = _find_ffmpeg()
 
 
 

@@ -30,10 +30,16 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      # Cache the Python archive so subsequent runs skip the ~40 MB download
+      - name: Cache bundled resources
+        uses: actions/cache@v4
         with:
-          python-version: '3.12'
+          path: cache/
+          key: bundled-resources-${{ runner.os }}-${{ runner.arch }}-py3.12.9
+
+      - name: Install Linux packaging dependencies
+        if: matrix.platform == 'linux'
+        run: sudo apt-get install -y fakeroot rpm
 
       - name: Install root dependencies
         run: npm install
@@ -42,28 +48,36 @@ jobs:
         run: npm install
         working-directory: frontend/yt-interface
 
-      - name: Install backend dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-        working-directory: backend
+      # FFmpeg: ffmpeg-static (installed above) already has the right binary for this runner.
+      # bundle-ffmpeg.js copies it from node_modules → resources/ffmpeg/
+      - name: Bundle FFmpeg
+        run: node scripts/bundle-ffmpeg.js
+
+      # Downloads standalone Python + pip-installs all backend requirements
+      - name: Bundle Python
+        run: node scripts/bundle-python.js
 
       - name: Build frontend
         run: npm run build:frontend
 
-      - name: Bundle FFmpeg
-        run: node scripts/bundle-ffmpeg.js
-
-      - name: Bundle Python (Windows only)
-        if: matrix.platform == 'win'
-        run: node scripts/bundle-python.js
-
-      - name: Build Electron App
-        run: npm run dist:${{ matrix.platform }} -- --publish always
+      # Call electron-builder directly — avoids the double frontend build that
+      # `npm run dist:*` would trigger (those scripts include build:frontend internally).
+      # --publish always  →  creates/updates a GitHub Release for the current tag.
+      - name: Package & publish Electron app
+        run: npx electron-builder --${{ matrix.platform }} --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS code signing (optional — app still builds without these,
+          # but Gatekeeper will warn users on install).
+          # Add CSC_LINK and CSC_KEY_PASSWORD as repo secrets to enable signing.
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # macOS notarization (requires Apple Developer account)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Upload artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.platform }}
@@ -74,8 +88,4 @@ jobs:
             release/*.deb
             release/*.zip
             release/*.blockmap
-
-
-
-# Completed build & publish via electron-builder
 
