@@ -14,8 +14,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const PYTHON_VERSION = '3.12.9';
-const RELEASE_DATE = '20250317';
+const PYTHON_VERSION = '3.12.7';
+const RELEASE_DATE = '20241002';
 
 // Maps Node.js platform-arch to python-build-standalone target triple
 const TARGETS = {
@@ -31,38 +31,50 @@ const PYTHON_DIR = path.join(RESOURCES_DIR, 'python');
 const BACKEND_DIR = path.join(PROJECT_ROOT, 'backend');
 const CACHE_DIR = path.join(PROJECT_ROOT, 'cache');
 
+function isValidArchive(filePath) {
+  try {
+    return fs.existsSync(filePath) && fs.statSync(filePath).size > 1024;
+  } catch {
+    return false;
+  }
+}
+
 function downloadFile(url, dest) {
   const cachePath = path.join(CACHE_DIR, path.basename(dest));
 
-  if (fs.existsSync(cachePath)) {
+  if (isValidArchive(cachePath)) {
     console.log(`  Using cached: ${path.basename(cachePath)}`);
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(cachePath, dest);
     return Promise.resolve();
   }
 
+  // Remove any stale/empty cache entry before downloading
+  if (fs.existsSync(cachePath)) fs.unlinkSync(cachePath);
+
   return new Promise((resolve, reject) => {
     console.log(`  Downloading: ${url}`);
     fs.mkdirSync(CACHE_DIR, { recursive: true });
     fs.mkdirSync(path.dirname(dest), { recursive: true });
 
-    const file = fs.createWriteStream(dest);
+    let received = 0;
 
+    // follow redirects, always writing to `dest`
     const request = (u) => {
       https.get(u, (res) => {
         if (res.statusCode === 301 || res.statusCode === 302) {
-          file.destroy();
+          res.resume(); // drain so the socket can be reused
           request(res.headers.location);
           return;
         }
         if (res.statusCode !== 200) {
-          file.destroy();
           reject(new Error(`HTTP ${res.statusCode} from ${u}`));
           return;
         }
 
         const total = parseInt(res.headers['content-length'] || '0', 10);
-        let received = 0;
+        const file = fs.createWriteStream(dest);
+
         res.on('data', (chunk) => {
           received += chunk.length;
           if (total) {
@@ -74,10 +86,16 @@ function downloadFile(url, dest) {
 
         res.pipe(file);
         file.on('finish', () => {
-          file.close();
-          console.log('');
-          fs.copyFileSync(dest, cachePath);
-          resolve();
+          file.close(() => {
+            console.log('');
+            if (received === 0) {
+              reject(new Error('Downloaded file is empty — URL may not exist'));
+              return;
+            }
+            // Only cache after a confirmed non-empty download
+            fs.copyFileSync(dest, cachePath);
+            resolve();
+          });
         });
         file.on('error', reject);
       }).on('error', reject);

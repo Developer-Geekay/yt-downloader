@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: cache/
-          key: bundled-resources-${{ runner.os }}-${{ runner.arch }}-py3.12.9
+          key: bundled-resources-${{ runner.os }}-${{ runner.arch }}-py3.12.7
 
       - name: Install Linux packaging dependencies
         if: matrix.platform == 'linux'
