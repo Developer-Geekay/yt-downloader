@@ -13,6 +13,8 @@ function getDb() {
     CREATE TABLE IF NOT EXISTS jobs (
       id         TEXT PRIMARY KEY,
       url        TEXT,
+      title      TEXT,
+      thumbnail  TEXT,
       status     TEXT DEFAULT 'queued',
       progress   TEXT,
       speed      TEXT,

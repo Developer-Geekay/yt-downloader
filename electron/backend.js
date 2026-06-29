@@ -100,7 +100,7 @@ class BackendManager {
 
     const projectRoot  = this._getProjectRoot();
     const nodeBin      = this._findNode(projectRoot);
-    const serverScript = path.join(projectRoot, 'backend-node', 'server.js');
+    const serverScript = path.join(projectRoot, 'backend', 'server.js');
     const ffmpegPath   = this._findFFmpeg(projectRoot);
     const ytdlpPath    = this._findYtdlp(projectRoot);
     const nodePath     = path.join(projectRoot, 'resources', 'node',

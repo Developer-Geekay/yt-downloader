@@ -1,140 +1,73 @@
-<div class="flex min-h-screen bg-surface">
+<div class="flex flex-col min-h-screen bg-surface">
 
-  <!-- ── Desktop Sidebar ──────────────────────────────────── -->
-  <nav class="hidden md:flex flex-col h-screen w-72 fixed left-0 top-0 py-8 px-4 border-r border-outline-variant bg-surface-container-low z-40">
+  <!-- ── Top Navigation Bar ──────────────────────────────────── -->
+  <header class="h-16 relative flex items-center px-4 md:px-6 sticky top-0 bg-surface-container-low border-b border-outline-variant/30 z-40 shrink-0">
 
-    <!-- Brand -->
-    <div class="flex items-center gap-3 mb-10 px-3">
-      <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary font-bold text-lg font-display">
+    <!-- Brand (left) -->
+    <div class="flex items-center gap-2.5 shrink-0">
+      <div class="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-on-primary font-bold text-sm font-display select-none">
         S
       </div>
-      <div>
-        <h1 class="font-display text-xl font-bold text-primary leading-none">StreamFlow</h1>
-        <p class="text-xs text-on-surface-variant mt-0.5">v2.4.0</p>
-      </div>
+      <span class="font-display text-lg font-bold text-primary hidden sm:block">StreamFlow</span>
     </div>
 
-    <!-- CTA -->
-    <button
-      (click)="navigate('dashboard')"
-      class="w-full mb-8 py-3.5 px-5 rounded-full bg-primary-container text-on-primary-container text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-sm">
-      <span class="material-symbols-outlined" style="font-size:20px">add</span>
-      New Download
-    </button>
+    <!-- Nav pills (absolute center) -->
+    <nav class="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
+      <button
+        (click)="navigate('dashboard')"
+        class="flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold transition-all"
+        [class]="isNavActive('dashboard')
+          ? 'bg-secondary-container text-on-secondary-container'
+          : 'text-on-surface-variant hover:bg-surface-container-high'">
+        <span class="material-symbols-outlined"
+          [class]="isNavActive('dashboard') ? 'fill' : ''"
+          style="font-size:18px">dashboard</span>
+        <span class="hidden sm:block">Dashboard</span>
+      </button>
 
-    <!-- Main Nav -->
-    <ul class="flex-1 space-y-1">
-      <li>
-        <button
-          (click)="navigate('dashboard')"
-          [class]="isNavActive('dashboard')
-            ? 'w-full flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full font-semibold text-sm transition-all'
-            : 'w-full flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm transition-all'">
-          <span class="material-symbols-outlined" [class]="isNavActive('dashboard') ? 'fill' : ''" style="font-size:20px">dashboard</span>
-          Dashboard
-        </button>
-      </li>
-      <li>
-        <button
-          (click)="navigate('queue')"
-          [class]="isNavActive('queue')
-            ? 'w-full flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full font-semibold text-sm transition-all'
-            : 'w-full flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm transition-all'">
-          <span class="material-symbols-outlined" [class]="isNavActive('queue') ? 'fill' : ''" style="font-size:20px">hourglass_empty</span>
-          Queue
-        </button>
-      </li>
-      <li>
-        <button
-          (click)="navigate('library')"
-          [class]="isNavActive('library')
-            ? 'w-full flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full font-semibold text-sm transition-all'
-            : 'w-full flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm transition-all'">
-          <span class="material-symbols-outlined" [class]="isNavActive('library') ? 'fill' : ''" style="font-size:20px">video_library</span>
-          Library
-        </button>
-      </li>
-      <li>
-        <button
-          (click)="goToSettings()"
-          [class]="isOnSettings()
-            ? 'w-full flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full font-semibold text-sm transition-all'
-            : 'w-full flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm transition-all'">
-          <span class="material-symbols-outlined" [class]="isOnSettings() ? 'fill' : ''" style="font-size:20px">settings</span>
-          Settings
-        </button>
-      </li>
-    </ul>
+      <button
+        (click)="navigate('queue')"
+        class="flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold transition-all"
+        [class]="isNavActive('queue')
+          ? 'bg-secondary-container text-on-secondary-container'
+          : 'text-on-surface-variant hover:bg-surface-container-high'">
+        <span class="material-symbols-outlined"
+          [class]="isNavActive('queue') ? 'fill' : ''"
+          style="font-size:18px">hourglass_empty</span>
+        <span class="hidden sm:block">Queue</span>
+      </button>
 
-    <!-- Footer Nav -->
-    <ul class="space-y-1 pt-6 border-t border-outline-variant">
-      <li>
-        <button class="w-full flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm transition-all">
-          <span class="material-symbols-outlined" style="font-size:20px">help</span>
-          Help
-        </button>
-      </li>
-    </ul>
-  </nav>
+      <button
+        (click)="navigate('library')"
+        class="flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold transition-all"
+        [class]="isNavActive('library')
+          ? 'bg-secondary-container text-on-secondary-container'
+          : 'text-on-surface-variant hover:bg-surface-container-high'">
+        <span class="material-symbols-outlined"
+          [class]="isNavActive('library') ? 'fill' : ''"
+          style="font-size:18px">video_library</span>
+        <span class="hidden sm:block">Library</span>
+      </button>
+    </nav>
 
-  <!-- ── Main Content ──────────────────────────────────────── -->
-  <main class="flex-1 md:ml-72 flex flex-col min-h-screen pb-20 md:pb-0">
-
-    <!-- Desktop top bar -->
-    <div class="hidden md:flex h-16 items-center justify-end px-16 sticky top-0 bg-surface/80 backdrop-blur-md z-30 border-b border-outline-variant/30">
-      <button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
-        <span class="material-symbols-outlined" style="font-size:22px">notifications</span>
+    <!-- Settings (right) -->
+    <div class="ml-auto flex items-center gap-1 shrink-0">
+      <button
+        (click)="goToSettings()"
+        class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+        [class]="isOnSettings()
+          ? 'bg-secondary-container text-on-secondary-container'
+          : 'text-on-surface-variant hover:bg-surface-container-high'">
+        <span class="material-symbols-outlined"
+          [class]="isOnSettings() ? 'fill' : ''"
+          style="font-size:20px">settings</span>
       </button>
     </div>
+  </header>
 
-    <!-- Mobile top bar -->
-    <header class="md:hidden flex items-center justify-between px-4 h-14 border-b border-outline-variant bg-surface sticky top-0 z-30">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold text-sm font-display">S</div>
-        <span class="font-display text-lg font-bold text-primary">StreamFlow</span>
-      </div>
-      <button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high">
-        <span class="material-symbols-outlined" style="font-size:22px">notifications</span>
-      </button>
-    </header>
-
+  <!-- ── Page Content ────────────────────────────────────────── -->
+  <main class="flex-1 flex flex-col min-h-0">
     <router-outlet></router-outlet>
   </main>
-
-  <!-- ── Mobile Bottom Nav ─────────────────────────────────── -->
-  <nav class="md:hidden fixed bottom-0 w-full h-[68px] bg-surface-container-low border-t border-outline-variant/30 flex justify-around items-center px-2 z-40">
-    <button
-      (click)="navigate('dashboard')"
-      [class]="isNavActive('dashboard') ? 'flex flex-col items-center gap-0.5 text-primary' : 'flex flex-col items-center gap-0.5 text-on-surface-variant'">
-      <div [class]="isNavActive('dashboard') ? 'w-14 h-7 bg-secondary-container rounded-full flex items-center justify-center' : 'w-14 h-7 rounded-full flex items-center justify-center'">
-        <span class="material-symbols-outlined" style="font-size:20px">dashboard</span>
-      </div>
-      <span class="text-[10px] font-medium">Dashboard</span>
-    </button>
-    <button
-      (click)="navigate('queue')"
-      [class]="isNavActive('queue') ? 'flex flex-col items-center gap-0.5 text-primary' : 'flex flex-col items-center gap-0.5 text-on-surface-variant'">
-      <div [class]="isNavActive('queue') ? 'w-14 h-7 bg-secondary-container rounded-full flex items-center justify-center' : 'w-14 h-7 rounded-full flex items-center justify-center'">
-        <span class="material-symbols-outlined" style="font-size:20px">hourglass_empty</span>
-      </div>
-      <span class="text-[10px] font-medium">Queue</span>
-    </button>
-    <button
-      (click)="navigate('library')"
-      [class]="isNavActive('library') ? 'flex flex-col items-center gap-0.5 text-primary' : 'flex flex-col items-center gap-0.5 text-on-surface-variant'">
-      <div [class]="isNavActive('library') ? 'w-14 h-7 bg-secondary-container rounded-full flex items-center justify-center' : 'w-14 h-7 rounded-full flex items-center justify-center'">
-        <span class="material-symbols-outlined" style="font-size:20px">video_library</span>
-      </div>
-      <span class="text-[10px] font-medium">Library</span>
-    </button>
-    <button
-      (click)="goToSettings()"
-      [class]="isOnSettings() ? 'flex flex-col items-center gap-0.5 text-primary' : 'flex flex-col items-center gap-0.5 text-on-surface-variant'">
-      <div [class]="isOnSettings() ? 'w-14 h-7 bg-secondary-container rounded-full flex items-center justify-center' : 'w-14 h-7 rounded-full flex items-center justify-center'">
-        <span class="material-symbols-outlined" style="font-size:20px">settings</span>
-      </div>
-      <span class="text-[10px] font-medium">Settings</span>
-    </button>
-  </nav>
 
 </div>

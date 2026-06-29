@@ -33,7 +33,11 @@ function generateId() {
 }
 
 function baseCmd() {
-  const cmd = [config.YTDLP_BINARY];
+  const cmd = [
+    config.YTDLP_BINARY,
+    '--impersonate', 'chrome-136',
+    '--socket-timeout', '30',
+  ];
   if (config.NODE_BINARY && fs.existsSync(config.NODE_BINARY)) {
     cmd.push('--js-runtimes', `node:${config.NODE_BINARY}`);
   }
@@ -115,7 +119,7 @@ async function getDownloadOptions(url) {
 }
 
 // Runs in the background — never awaited by the request handler.
-async function downloadVideo(jobId, url, formatId) {
+async function downloadVideo(jobId, url, formatId, includeSubtitles = false) {
   if (!formatId || formatId.startsWith('-')) throw new Error(`Invalid formatId: ${formatId}`);
   validateUrl(url);
 
@@ -123,6 +127,10 @@ async function downloadVideo(jobId, url, formatId) {
   fs.mkdirSync(outdir, { recursive: true });
 
   const outtmpl = path.join(outdir, '%(title).200s [%(id)s].%(ext)s');
+
+  const subtitleArgs = includeSubtitles
+    ? ['--write-subs', '--write-auto-subs', '--sub-langs', 'en.*,-live_chat']
+    : [];
 
   const [exe, ...args] = [
     ...baseCmd(),
@@ -139,6 +147,7 @@ async function downloadVideo(jobId, url, formatId) {
     '--cache-dir',         config.TEMP_DIR,
     '--no-warnings',
     '--progress-template', '[PROG]%(progress.status)s|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s',
+    ...subtitleArgs,
     '--', url,
   ];
 
@@ -207,8 +216,18 @@ async function downloadVideo(jobId, url, formatId) {
   }
 
   if (finalFile) {
-    const relPath = `${jobId}/${path.basename(finalFile)}`;
-    db.prepare("UPDATE jobs SET status='finished', progress='100%', filename=? WHERE id=?").run(relPath, jobId);
+    const basename = path.basename(finalFile);
+    try {
+      // Move all files (video + subtitle files) out of the temp dir
+      const allFiles = fs.readdirSync(outdir).filter(f => !f.startsWith('.'));
+      for (const f of allFiles) {
+        const src = path.join(outdir, f);
+        const dst = path.join(config.DOWNLOAD_DIR, f);
+        try { fs.renameSync(src, dst); } catch (_) {}
+      }
+      fs.rmSync(outdir, { recursive: true, force: true });
+    } catch (_) {}
+    db.prepare("UPDATE jobs SET status='finished', progress='100%', filename=? WHERE id=?").run(basename, jobId);
   } else {
     db.prepare("UPDATE jobs SET status='error', error='Output file not found' WHERE id=?").run(jobId);
   }

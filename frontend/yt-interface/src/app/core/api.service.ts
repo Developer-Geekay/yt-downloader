@@ -51,11 +51,15 @@ export class ApiService {
     );
   }
 
-  startDownload(url: string, optionsId: string, option: string) {
+  startDownload(url: string, optionsId: string, option: string, title?: string, thumbnail?: string, subtitles?: boolean) {
     return this.http.post<DownloadResponse>(
       `${this.base}/api/download`,
-      { url, options_id: optionsId, option }
+      { url, options_id: optionsId, option, title, thumbnail, subtitles }
     );
+  }
+
+  checkHealth() {
+    return this.http.get<{ status: string }>(`${this.base}/health`);
   }
 
   getProgress(jobId: string) {
@@ -78,6 +82,10 @@ export class ApiService {
 
   getHistory() {
     return this.http.get<JobStatus[]>(`${this.base}/api/history`);
+  }
+
+  getActiveJobs() {
+    return this.http.get<JobStatus[]>(`${this.base}/api/active`);
   }
 
   deleteJob(jobId: string) {

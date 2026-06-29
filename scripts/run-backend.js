@@ -10,7 +10,7 @@ const path = require('path');
 const fs   = require('fs');
 
 const PROJECT_ROOT  = path.join(__dirname, '..');
-const BACKEND_SCRIPT = path.join(PROJECT_ROOT, 'backend-node', 'server.js');
+const BACKEND_SCRIPT = path.join(PROJECT_ROOT, 'backend', 'server.js');
 const isWin = process.platform === 'win32';
 
 // Prefer bundled Node.js, fall back to the process currently running this script

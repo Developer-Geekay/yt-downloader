@@ -63,13 +63,15 @@ async function handleHealth(req, res) {
 async function handleOptions(req, res) {
   const body = await readBody(req);
   if (!body.url) return json(res, 422, { detail: 'url is required' });
+  // Clean up stale options from abandoned fetches before inserting new ones
+  getDb().prepare('DELETE FROM options WHERE options_id NOT IN (SELECT options_id FROM options ORDER BY rowid DESC LIMIT 5)').run();
   const result = await getDownloadOptions(body.url);
   json(res, 200, result);
 }
 
 async function handleDownload(req, res) {
   const body = await readBody(req);
-  const { url, options_id, option } = body;
+  const { url, options_id, option, title, thumbnail, subtitles } = body;
   if (!url || !options_id || !option) return json(res, 422, { detail: 'url, options_id and option are required' });
 
   const db = getDb();
@@ -79,11 +81,11 @@ async function handleDownload(req, res) {
   const formatId = row.format_id;
   const jobId    = randomBytes(16).toString('hex');
 
-  db.prepare("INSERT INTO jobs (id, url, status) VALUES (?, ?, 'queued')").run(jobId, url);
+  db.prepare("INSERT INTO jobs (id, url, title, thumbnail, status) VALUES (?, ?, ?, ?, 'queued')").run(jobId, url, title || null, thumbnail || null);
   db.prepare('DELETE FROM options WHERE options_id=?').run(options_id);
 
   // Fire and forget — don't await
-  downloadVideo(jobId, url, formatId).catch(err => {
+  downloadVideo(jobId, url, formatId, !!subtitles).catch(err => {
     try {
       getDb().prepare("UPDATE jobs SET status='error', error=? WHERE id=?").run(err.message, jobId);
     } catch (_) {}
@@ -129,6 +131,14 @@ async function handleHistory(req, res) {
   json(res, 200, jobs);
 }
 
+async function handleActiveJobs(req, res) {
+  const db   = getDb();
+  const jobs = db.prepare(
+    "SELECT * FROM jobs WHERE status IN ('queued','downloading') ORDER BY created_at ASC"
+  ).all();
+  json(res, 200, jobs);
+}
+
 async function handleGetFilePath(req, res, jobId) {
   const db  = getDb();
   const job = db.prepare('SELECT filename FROM jobs WHERE id=?').get(jobId);
@@ -146,12 +156,7 @@ async function handleDeleteJob(req, res, jobId) {
   const db  = getDb();
   const job = db.prepare('SELECT filename FROM jobs WHERE id=?').get(jobId);
 
-  // Remove the isolated job directory (preferred)
-  const jobDir = path.join(config.DOWNLOAD_DIR, jobId);
-  if (fs.existsSync(jobDir)) {
-    try { fs.rmSync(jobDir, { recursive: true, force: true }); } catch (_) {}
-  } else if (job?.filename) {
-    // Legacy flat-file fallback
+  if (job?.filename) {
     const filePath = path.join(config.DOWNLOAD_DIR, job.filename);
     try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
   }
@@ -202,6 +207,7 @@ const server = http.createServer(async (req, res) => {
     if (method === 'GET'    && filepathMatch)                        return await handleGetFilePath(req, res, filepathMatch[1]);
     if (method === 'POST'   && cancelMatch)                          return await handleCancel(req, res, cancelMatch[1]);
     if (method === 'GET'    && urlPath === '/api/history')           return await handleHistory(req, res);
+    if (method === 'GET'    && urlPath === '/api/active')            return await handleActiveJobs(req, res);
     if (method === 'DELETE' && urlPath === '/api/history')           return await handleDeleteHistory(req, res);
     if (method === 'DELETE' && jobMatch)                             return await handleDeleteJob(req, res, jobMatch[1]);
 

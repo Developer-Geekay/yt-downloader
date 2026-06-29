@@ -37,9 +37,9 @@ function walkFind(dir, name) {
   return null;
 }
 
-const DOWNLOAD_DIR = process.env.VD_DOWNLOAD_DIR || path.join(__dirname, '..', 'backend', 'downloads');
-const TEMP_DIR     = process.env.VD_TEMP_DIR     || path.join(__dirname, '..', 'backend', 'temp');
-const DB_PATH      = process.env.VD_DB_PATH      || path.join(__dirname, '..', 'backend', 'data', 'app.db');
+const DOWNLOAD_DIR = process.env.VD_DOWNLOAD_DIR || path.join(__dirname, 'downloads');
+const TEMP_DIR     = process.env.VD_TEMP_DIR     || path.join(__dirname, 'temp');
+const DB_PATH      = process.env.VD_DB_PATH      || path.join(PROJECT_ROOT, 'data', 'app.db');
 
 // Ensure required directories exist
 for (const dir of [DOWNLOAD_DIR, TEMP_DIR, path.dirname(DB_PATH)]) {
@@ -51,6 +51,7 @@ module.exports = {
   AUTH_USER:        process.env.VD_USER || 'admin',
   AUTH_PASS:        process.env.VD_PASS || 'change_this_password',
   PORT:             parseInt(process.env.ELECTRON_PORT || '8000', 10),
+  PROXY:            process.env.VD_PROXY || null,
   DOWNLOAD_DIR,
   TEMP_DIR,
   DB_PATH,

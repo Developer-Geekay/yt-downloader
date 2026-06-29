@@ -34,7 +34,15 @@ function createSplashWindow() {
 
 // ─── APP STARTUP CORE ────────────────────────────────────────────────────────
 async function startBackendAndUI() {
-  // If not configured, we don't start the backend yet. 
+  // In dev mode the backend is already running via `npm run dev:backend` on port 8000.
+  // Don't spawn a second copy — just reuse it.
+  if (IS_DEV) {
+    backendManager.port = 8000;
+    createMainWindow();
+    return;
+  }
+
+  // If not configured, we don't start the backend yet.
   // The main window will open and redirect to /setup.
   if (!ConfigManager.isConfigured()) {
     createMainWindow();
@@ -160,15 +168,16 @@ function setupIPC() {
   ipcMain.handle('get-app-version', () => app.getVersion());
   ipcMain.handle('is-configured', () => ConfigManager.isConfigured());
   ipcMain.handle('get-app-config', () => ({
-    downloadPath: ConfigManager.get('downloadPath'),
-    tempPath: ConfigManager.get('tempPath'),
+    downloadPath:     ConfigManager.get('downloadPath'),
+    tempPath:         ConfigManager.get('tempPath'),
+    defaultSubtitles: ConfigManager.get('defaultSubtitles') ?? false,
   }));
   ipcMain.handle('check-dependencies', () => backendManager.checkDependencies());
 
   ipcMain.handle('restart-backend', async () => {
+    if (IS_DEV) return backendManager.port; // dev backend is external
     if (backendManager) {
-      await backendManager.stop();
-      // Wait a bit for port to release
+      backendManager.stop();
       await new Promise(r => setTimeout(r, 1000));
       return await backendManager.start({
         downloadPath: ConfigManager.get('downloadPath'),
@@ -191,6 +200,8 @@ function setupIPC() {
   ipcMain.handle('save-setup-config', async (_, config) => {
     const success = ConfigManager.save(config);
     if (!success) return false;
+
+    if (IS_DEV) return true; // dev backend is external — nothing to restart
 
     if (backendManager.process) {
       // Backend already running (settings update) — restart cleanly with new config

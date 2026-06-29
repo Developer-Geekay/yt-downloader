@@ -28,7 +28,7 @@ All cached in `cache/` so subsequent runs are instant. No system Python, pip, or
 
 ### Backend
 ```bash
-npm run dev:backend          # starts backend-node/server.js on port 8000
+npm run dev:backend          # starts backend/server.js on port 8000
 ```
 
 ### Frontend (run from `frontend/yt-interface/`)
@@ -48,7 +48,7 @@ npm run dist:mac              # package for distribution (or dist:win, dist:linu
 
 ## Architecture
 
-### Backend (`backend-node/`)
+### Backend (`backend/`)
 - `server.js` — pure `node:http` server, all routes, zero npm dependencies
 - `config.js` — paths, env vars, binary discovery. Reads `ELECTRON_MODE`, `VD_USER`, `VD_PASS`, `VD_DOWNLOAD_DIR`, `VD_TEMP_DIR`, `VD_DB_PATH`
 - `downloader.js` — spawns `resources/yt-dlp/yt-dlp` via `child_process`. `getDownloadOptions()` fetches formats, `downloadVideo()` runs fire-and-forget with DB-polled cancellation
@@ -68,11 +68,11 @@ Routes: `/` (downloader), `/setup`, `/settings`
 
 ### Electron (`electron/`)
 - `main.js` — App lifecycle, BrowserWindow, system tray, IPC handlers
-- `backend.js` — `BackendManager`: spawns `resources/node/node backend-node/server.js`, finds available port starting at 8000, polls `/health` until ready, auto-restarts on crash (up to 3 retries)
+- `backend.js` — `BackendManager`: spawns `resources/node/node backend/server.js`, finds available port starting at 8000, polls `/health` until ready, auto-restarts on crash (up to 3 retries)
 - `preload.js` — Context bridge exposing `window.electronAPI` to the renderer (sandboxed)
 - `config.js` — `ConfigManager`: persists user config to `userData`
 
-**Binary discovery order** (in `backend-node/config.js` `findBinary()`):
+**Binary discovery order** (in `backend/config.js` `findBinary()`):
 1. Env var override
 2. `resources/<subdir>/<binary>` (bundled)
 3. Recursive walk inside `resources/<subdir>/`
@@ -104,7 +104,7 @@ Routes: `/` (downloader), `/setup`, `/settings`
 `electron-builder` config is in root `package.json`. Output goes to `release/`.
 
 Key config:
-- `files` includes `backend-node/**/*`, `resources/ffmpeg/**/*`, `resources/yt-dlp/**/*`, `resources/node/**/*`
+- `files` includes `backend/**/*`, `resources/ffmpeg/**/*`, `resources/yt-dlp/**/*`, `resources/node/**/*`
 - `asarUnpack` excludes those same paths so binaries run as real files
 - In packaged mode `backend.js` resolves from `process.resourcesPath/app.asar.unpacked/`
 

@@ -49,8 +49,8 @@ frontend/yt-interface/tmp/
 # Runtime Data
 data/*.db
 data/*.sqlite
-backend-node/downloads/
-backend-node/temp/
+backend/downloads/
+backend/temp/
 
 # Environment Variables
 *.env

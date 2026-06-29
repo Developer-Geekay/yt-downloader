@@ -45,14 +45,14 @@
     "files": [
       "electron/**/*",
       "frontend/yt-interface/dist/**/*",
-      "backend-node/**/*",
+      "backend/**/*",
       "resources/ffmpeg/**/*",
       "resources/yt-dlp/**/*",
       "resources/node/**/*",
-      "!backend-node/**/__pycache__/**"
+      "!backend/**/__pycache__/**"
     ],
     "asarUnpack": [
-      "backend-node/**/*",
+      "backend/**/*",
       "resources/ffmpeg/**/*",
       "resources/yt-dlp/**/*",
       "resources/node/**/*"

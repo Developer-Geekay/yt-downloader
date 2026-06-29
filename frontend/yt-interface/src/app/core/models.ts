@@ -25,7 +25,9 @@ export interface JobStatus {
   speed?: string;
   eta?: string;
   id?: string;
+  url?: string;
   error?: string;
   filename?: string;
   title?: string;
+  thumbnail?: string;
 }

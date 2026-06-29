@@ -34,6 +34,7 @@ export class Downloader implements OnInit {
 
   currentTitle = signal('');
   currentThumbnail = signal('');
+  includeSubtitles = signal(false);
   isLoading = signal(false);
   fetchError = signal<string | null>(null);
 
@@ -62,6 +63,17 @@ export class Downloader implements OnInit {
 
   ngOnInit() {
     this.loadHistory();
+    this.resumeActiveJobs();
+  }
+
+  resumeActiveJobs() {
+    this.api.getActiveJobs().subscribe(active => {
+      for (const job of active) {
+        if (!job.id) continue;
+        this.jobs.update(j => ({ ...j, [job.id!]: job }));
+        this.trackJob(job.id!);
+      }
+    });
   }
 
   loadHistory() {
@@ -82,6 +94,10 @@ export class Downloader implements OnInit {
         this.currentTitle.set(res.title);
         this.currentThumbnail.set(res.thumbnail ?? '');
         this.selectedOption.set(null);
+        // Read default subtitle preference from app config
+        (window as any).electronAPI?.getAppConfig?.()
+          ?.then((cfg: any) => { if (cfg?.defaultSubtitles !== undefined) this.includeSubtitles.set(cfg.defaultSubtitles); })
+          ?.catch(() => {});
         // Default to first available tab
         if (res.video_audio.length) this.formatTab.set('video_audio');
         else if (res.video_only.length) this.formatTab.set('video_only');
@@ -101,10 +117,13 @@ export class Downloader implements OnInit {
     const option = this.selectedOption();
     if (!option) return;
 
-    this.api.startDownload(this.url(), this.optionsId(), option).subscribe(res => {
+    const title = this.currentTitle();
+    const thumbnail = this.currentThumbnail();
+
+    this.api.startDownload(this.url(), this.optionsId(), option, title, thumbnail, this.includeSubtitles()).subscribe(res => {
       this.jobs.update(j => ({
         ...j,
-        [res.job_id]: { status: 'queued', progress: '0%', title: this.currentTitle() },
+        [res.job_id]: { status: 'queued', progress: '0%', title, thumbnail },
       }));
       this.trackJob(res.job_id);
       this.clearUrl();
@@ -127,7 +146,10 @@ export class Downloader implements OnInit {
           return;
         }
 
-        this.jobs.update(j => ({ ...j, [jobId]: status }));
+        this.jobs.update(j => ({
+          ...j,
+          [jobId]: { title: j[jobId]?.title, thumbnail: j[jobId]?.thumbnail, ...status },
+        }));
 
         if (status.progress && window.electronAPI?.isElectron) {
           const pct = parseFloat(status.progress.replace('%', ''));
@@ -136,6 +158,12 @@ export class Downloader implements OnInit {
 
         if (status.status === 'error' || status.status === 'cancelled') {
           clearInterval(timer);
+          this.jobs.update(j => {
+            const next = { ...j };
+            delete next[jobId];
+            return next;
+          });
+          this.loadHistory();
           window.electronAPI?.setProgress(-1);
         }
       });
@@ -178,11 +206,20 @@ export class Downloader implements OnInit {
     this.audioOnly.set([]);
     this.currentTitle.set('');
     this.currentThumbnail.set('');
+    this.includeSubtitles.set(false);
     this.fetchError.set(null);
   }
 
   backToDashboard() {
     this.viewSvc.currentView.set('dashboard');
+  }
+
+  restartDownload(url: string) {
+    if (!url) return;
+    this.clearUrl();
+    this.url.set(url);
+    this.viewSvc.currentView.set('dashboard');
+    this.fetchOptions();
   }
 
   getDownloadUrl(jobId: string) {
@@ -207,10 +244,10 @@ export class Downloader implements OnInit {
     }
   }
 
-  getDisplayName(filename?: string): string {
-    if (!filename) return 'Download';
-    const parts = filename.replace(/\\/g, '/').split('/');
-    return parts[parts.length - 1] || filename;
+  getDisplayName(filename?: string, title?: string): string {
+    if (filename) return filename.replace(/\\/g, '/').split('/').pop() || filename;
+    if (title) return title;
+    return 'Download';
   }
 
   getStatusLabel(status: string): string {
