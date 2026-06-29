@@ -1,46 +1,42 @@
 /**
- * Run the FastAPI backend using the bundled Python distribution.
- * Falls back to project venvs or system Python if bundled Python is absent.
+ * Start the Node.js backend in development mode.
+ * Uses the bundled Node.js binary if available, otherwise falls back to system node.
  *
- * Usage: node scripts/run-backend.js [uvicorn args...]
- *   e.g. node scripts/run-backend.js --reload --port 8000
+ * Usage: node scripts/run-backend.js [--port 8000]
  */
 
-const { spawnSync } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
-const fs = require('fs');
+const fs   = require('fs');
 
-const PROJECT_ROOT = path.join(__dirname, '..');
+const PROJECT_ROOT  = path.join(__dirname, '..');
+const BACKEND_SCRIPT = path.join(PROJECT_ROOT, 'backend-node', 'server.js');
 const isWin = process.platform === 'win32';
 
-// Candidate Python binaries in priority order
-const candidates = isWin
-  ? [
-      path.join(PROJECT_ROOT, 'resources', 'python', 'python.exe'),
-    ]
-  : [
-      path.join(PROJECT_ROOT, 'resources', 'python', 'bin', 'python3'),
-      path.join(PROJECT_ROOT, 'resources', 'python', 'bin', 'python'),
-      path.join(PROJECT_ROOT, 'backend', '.ytenv', 'bin', 'python'),
-      path.join(PROJECT_ROOT, 'backend', '.venv', 'bin', 'python'),
-    ];
+// Prefer bundled Node.js, fall back to the process currently running this script
+const bundledNode = path.join(PROJECT_ROOT, 'resources', 'node', isWin ? 'node.exe' : 'node');
+const nodeBin = fs.existsSync(bundledNode) ? bundledNode : process.execPath;
 
-const pythonBin = candidates.find((p) => fs.existsSync(p)) || (isWin ? 'python' : 'python3');
+console.log(`Using Node.js: ${nodeBin}`);
+console.log(`Starting backend: ${BACKEND_SCRIPT}`);
 
-const extraArgs = process.argv.slice(2);
-const uvicornArgs = ['--reload', '--port', '8000', ...extraArgs];
+const port = (() => {
+  const idx = process.argv.indexOf('--port');
+  return idx >= 0 ? process.argv[idx + 1] : '8000';
+})();
 
-console.log(`Using Python: ${pythonBin}`);
-console.log(`Starting uvicorn on port ${uvicornArgs[uvicornArgs.indexOf('--port') + 1] || 8000}...`);
+const proc = spawn(nodeBin, [BACKEND_SCRIPT], {
+  env: {
+    ...process.env,
+    NODE_NO_WARNINGS: '1',
+    ELECTRON_PORT: port,
+  },
+  stdio: 'inherit',
+});
 
-const result = spawnSync(
-  pythonBin,
-  ['-m', 'uvicorn', 'app.main:app', ...uvicornArgs],
-  {
-    stdio: 'inherit',
-    cwd: path.join(PROJECT_ROOT, 'backend'),
-    env: { ...process.env, PYTHONUNBUFFERED: '1' },
-  }
-);
+proc.on('error', err => {
+  console.error('Failed to start backend:', err.message);
+  process.exit(1);
+});
 
-process.exit(result.status ?? 1);
+proc.on('close', code => process.exit(code ?? 0));

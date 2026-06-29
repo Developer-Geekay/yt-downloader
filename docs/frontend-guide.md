@@ -2,7 +2,7 @@
 
 ## Overview
 
-The frontend is an **Angular 21** single-page application styled with **Tailwind CSS v4.1** and featuring a modern **Glassmorphism** design. It communicates with the FastAPI backend via HTTP and uses Angular's **Signals** for reactive state management.
+The frontend is an **Angular 21** single-page application styled with **Tailwind CSS v4.1** and featuring a modern Material Design. It communicates with the Node.js backend via HTTP and uses Angular's **Signals** for reactive state management.
 
 ---
 

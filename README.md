@@ -1,17 +1,17 @@
-# Private Video Downloader
+# StreamFlow
 
 A self-hosted video downloader with a modern UI, real-time progress tracking, and download history. Runs as a standalone desktop app (Electron) or as a local web app.
 
-Built with **Angular 21**, **FastAPI**, and **yt-dlp**. Bundles its own Python and FFmpeg — no external tools need to be installed by the user.
+Built with **Angular 21**, **Node.js**, and **yt-dlp**. Bundles its own Node.js runtime, yt-dlp, and FFmpeg — no external tools need to be installed.
 
 ## Features
 
-- Glassmorphism dark UI with Tailwind CSS v4
-- Fetches and deduplicates video/audio format options per URL
+- Clean Material Design UI with Tailwind CSS v4
+- Paste URL → auto-parse formats → one-click download
 - Real-time progress, speed, and ETA
-- Download cancellation and file deletion
+- Download cancellation
+- Persisted history with Show in Finder/Explorer
 - Each download isolated in its own folder
-- Persisted history with direct file download links
 
 ## Technology Stack
 
@@ -19,12 +19,12 @@ Built with **Angular 21**, **FastAPI**, and **yt-dlp**. Bundles its own Python a
 |---|---|
 | Desktop shell | Electron 35 |
 | Frontend | Angular 21, Tailwind CSS v4, Signals |
-| Backend | Python 3.12, FastAPI, uvicorn, yt-dlp, SQLite |
-| Bundled tools | Python (python-build-standalone), FFmpeg (ffmpeg-static) |
+| Backend | Node.js 22 (built-in `node:http`, `node:sqlite`), yt-dlp |
+| Bundled tools | Node.js v22, yt-dlp, FFmpeg |
 
 ## Prerequisites
 
-Only **Node.js v18+** is required. Python and FFmpeg are downloaded automatically by the setup script.
+Only **Node.js v18+** is required on the host machine. Node.js runtime, yt-dlp, and FFmpeg are all downloaded automatically by the setup script.
 
 - [Download Node.js](https://nodejs.org/)
 
@@ -34,45 +34,41 @@ Only **Node.js v18+** is required. Python and FFmpeg are downloaded automaticall
 
 ### First-time setup
 
-Run once from the project root. Downloads Python 3.12 and FFmpeg into `resources/`, installs all backend pip packages inside the bundled Python.
-
 ```bash
 npm install
 npm run setup
+cd frontend/yt-interface && npm install && cd ../..
 ```
 
-> Downloads are cached in `cache/` — subsequent runs are instant.
+`npm run setup` downloads Node.js v22, yt-dlp, and FFmpeg into `resources/`. Downloads are cached in `cache/` — subsequent runs are instant.
 
-### Running in web mode (browser)
+### Running in dev mode (hot reload)
 
-Start the backend and frontend in separate terminals:
+Open three terminals:
 
 ```bash
-# Terminal 1 — FastAPI backend (http://localhost:8000)
+# Terminal 1 — Node.js backend (http://localhost:8000)
 npm run dev:backend
 
 # Terminal 2 — Angular dev server (http://localhost:4200)
 npm run dev:frontend
-```
 
-Open `http://localhost:4200` in your browser.
-
-Default credentials: `admin` / `change_this_password`
-Override with env vars: `VD_USER` and `VD_PASS`
-
-### Running as an Electron desktop app
-
-**Option A — hot reload** (Angular dev server + Electron, frontend changes reflect instantly):
-
-```bash
-# Terminal 1
-npm run dev:frontend
-
-# Terminal 2 — once Angular is ready at :4200
+# Terminal 3 — Electron (loads from :4200, hot reloads on frontend changes)
 npm run dev:electron:live
 ```
 
-**Option B — production build + Electron** (slower start, no hot reload):
+> Backend changes need a manual restart of Terminal 1. Or kill port 8000 and Electron's BackendManager will auto-restart it.
+
+### Running in web mode (browser only)
+
+```bash
+npm run dev:backend    # Terminal 1
+npm run dev:frontend   # Terminal 2
+```
+
+Open `http://localhost:4200`. Default credentials: `admin` / `change_this_password` (override with `VD_USER` / `VD_PASS` env vars).
+
+### Build frontend then launch Electron
 
 ```bash
 npm run dev:electron
@@ -82,8 +78,6 @@ npm run dev:electron
 
 ## Production Builds
 
-Builds are produced by GitHub Actions on every version tag push. All three platforms are built in parallel on native runners — no cross-compilation.
-
 ### Releasing a new version
 
 ```bash
@@ -91,23 +85,31 @@ git tag v1.2.0
 git push origin v1.2.0
 ```
 
-This triggers the workflow which:
-1. Downloads and bundles Python 3.12 (standalone, no system Python needed)
-2. Bundles FFmpeg via `ffmpeg-static` (correct binary per platform/arch)
-3. Builds the Angular frontend
-4. Packages with `electron-builder` and publishes to GitHub Releases
+This triggers the GitHub Actions workflow which:
+1. Bundles FFmpeg, yt-dlp, and Node.js v22 (correct binary per platform/arch)
+2. Builds the Angular frontend
+3. Packages with `electron-builder` and publishes to GitHub Releases
+
+### Building locally
+
+```bash
+npm run setup         # if not already done
+npm run dist:mac      # or dist:win / dist:linux
+```
+
+Output goes to `release/`.
 
 ### Platform outputs
 
 | Platform | Runner | Output |
 |---|---|---|
 | Windows | `windows-latest` | `.exe` (NSIS installer) + portable `.exe` |
-| macOS | `macos-latest` (Apple Silicon) | `.dmg` |
+| macOS | `macos-latest` | `.dmg` |
 | Linux | `ubuntu-latest` | `.AppImage` + `.deb` |
 
 ### macOS signing and notarization
 
-Without signing, macOS Gatekeeper will show a warning on install. The app still works — users can right-click → Open to bypass it. For seamless installs, add these as GitHub repo secrets (`Settings → Secrets and variables → Actions`):
+Without signing, Gatekeeper will warn on install. Users can right-click → Open to bypass. For seamless installs, add these as GitHub repo secrets:
 
 | Secret | Description |
 |---|---|
@@ -117,17 +119,6 @@ Without signing, macOS Gatekeeper will show a warning on install. The app still 
 | `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password from appleid.apple.com |
 | `APPLE_TEAM_ID` | 10-character team ID from developer.apple.com |
 
-The workflow passes these to `electron-builder` automatically. If the secrets are absent, the build succeeds but skips signing and notarization.
-
-### Building locally
-
-```bash
-npm run setup           # bundle Python + FFmpeg (if not done already)
-npm run dist:mac        # or dist:win / dist:linux
-```
-
-Output goes to `release/`.
-
 ---
 
 ## Configuration
@@ -136,16 +127,19 @@ Output goes to `release/`.
 |---|---|---|
 | `VD_USER` | `admin` | Basic auth username |
 | `VD_PASS` | `change_this_password` | Basic auth password |
-| `VD_DOWNLOAD_DIR` | `backend/downloads/` | Where finished files are stored |
-| `VD_TEMP_DIR` | `backend/temp/` | yt-dlp cache dir |
-| `VD_DB_PATH` | `backend/data/app.db` | SQLite database path |
+| `VD_DOWNLOAD_DIR` | `~/Downloads/VideoDownloader` | Where finished files are stored |
+| `VD_TEMP_DIR` | system temp | yt-dlp cache dir |
+| `VD_DB_PATH` | `data/app.db` | SQLite database path |
 
 In Electron mode these are configured through the first-run setup wizard and persisted to the OS user-data directory.
 
+---
+
 ## Usage
 
-1. Paste a video URL and press Enter
-2. Select a format from the dropdown (combined video+audio, video only, or audio only)
-3. Click **Start Download**
-4. Track progress in the active jobs panel
-5. Use the download icon to save the file, trash icon to delete it
+1. Paste a video URL — click **Paste** to auto-fill from clipboard
+2. Wait for formats to parse automatically
+3. Select a format (Video + Audio, Video Only, or Audio Only) and quality
+4. Click **Start Download**
+5. Track progress in the Queue view
+6. Use the folder icon in History/Library to reveal the file in Finder/Explorer

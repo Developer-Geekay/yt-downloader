@@ -1,237 +1,481 @@
-<div class="flex flex-col items-center justify-center w-full min-h-[80vh] px-4 py-12">
+<div [class]="viewSvc.currentView() === 'configure'
+  ? 'w-full max-w-screen-xl mx-auto px-4 md:px-16'
+  : 'w-full max-w-screen-xl mx-auto px-4 md:px-16 py-8 md:py-12'">
 
-  <div
-    class="relative w-full max-w-2xl p-8 backdrop-blur-2xl bg-slate-900/40 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+  <!-- ══════════════════════════════════════════
+       DASHBOARD VIEW
+  ══════════════════════════════════════════ -->
+  @if (viewSvc.currentView() === 'dashboard') {
 
-    <!-- Decorator blobs -->
-    <div class="absolute -top-20 -left-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-fuchsia-500/20 rounded-full blur-3xl pointer-events-none">
-    </div>
+    <!-- Hero -->
+    <section class="flex flex-col items-center text-center mb-20 max-w-3xl mx-auto">
+      <h2 class="font-display text-4xl md:text-6xl font-bold text-on-surface mb-4 leading-tight">
+        Download Anything.
+      </h2>
+      <p class="text-base text-on-surface-variant mb-10 max-w-xl leading-relaxed">
+        Paste any supported video URL below. StreamFlow automatically parses the highest available quality for offline viewing.
+      </p>
 
-    <div class="relative z-10 flex flex-col gap-8">
-
-      <!-- Header -->
-      <div class="text-center">
-        <h1
-          class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-fuchsia-400 mb-2">
-          Video Downloader
-        </h1>
-        <p class="text-slate-400">Download high-quality video and audio instantly.</p>
+      <!-- URL Input -->
+      <div class="w-full relative url-input-wrap rounded-2xl transition-all">
+        <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-outline pointer-events-none" style="font-size:20px">link</span>
+        <input
+          type="url"
+          placeholder="https://example.com/video..."
+          [value]="url()"
+          (input)="updateUrl($any($event.target).value)"
+          (keydown.enter)="fetchOptions()"
+          class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface rounded-2xl py-5 pl-14 pr-36 text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-outline transition-all shadow-sm" />
+        <button
+          (click)="url() ? fetchOptions() : pasteAndFetch()"
+          [disabled]="isLoading()"
+          class="absolute inset-y-2 right-2 bg-primary text-on-primary text-sm font-semibold px-5 rounded-xl flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity shadow-sm">
+          @if (isLoading()) {
+            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          } @else if (url()) {
+            <span class="material-symbols-outlined fill" style="font-size:18px">download</span>
+          } @else {
+            <span class="material-symbols-outlined" style="font-size:18px">content_paste</span>
+          }
+          <span class="hidden sm:inline">{{ isLoading() ? 'Parsing…' : (url() ? 'Parse' : 'Paste') }}</span>
+        </button>
       </div>
 
-      <!-- Input Section -->
-      <div class="flex flex-col gap-4">
-        <div class="relative group flex items-center gap-2">
-          <div class="relative flex-1">
-            <input id="url" type="url" required placeholder="Paste YouTube URL here..." [value]="url()"
-              (input)="updateUrl($any($event.target).value)" (keydown.enter)="!hasOptions() && fetchOptions()"
-              class="w-full px-6 py-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300 shadow-inner" />
-            <div class="absolute inset-0 rounded-2xl ring-1 ring-white/5 pointer-events-none"></div>
-          </div>
-
-          <button (click)="clearUrl()"
-            class="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
-            title="Clear and Reset">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        @if (fetchError()) {
-        <div class="flex items-start gap-3 px-5 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm animate-in fade-in duration-300">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-          </svg>
+      <!-- Error -->
+      @if (fetchError()) {
+        <div class="mt-4 w-full flex items-start gap-3 px-5 py-4 rounded-xl bg-error-container text-on-error-container text-sm">
+          <span class="material-symbols-outlined fill" style="font-size:18px">error</span>
           <span>{{ fetchError() }}</span>
         </div>
-        }
-
-        @if (!hasOptions()) {
-        <button (click)="fetchOptions()" [disabled]="isLoading() || !url()"
-          class="w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
-                   bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2">
-          @if (isLoading()) {
-          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-            viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-            </path>
-          </svg>
-          Fetching...
-          } @else {
-          Fetch Options
-          }
-        </button>
-        }
-      </div>
-
-      @if (hasOptions()) {
-      <div class="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-        <div class="relative group">
-          <select (change)="selectedOption.set($any($event.target).value)"
-            class="w-full px-6 py-4 appearance-none bg-slate-800/50 border border-slate-700/50 rounded-2xl text-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300 shadow-inner cursor-pointer">
-            <option value="" disabled selected>Select an option...</option>
-
-            @if (videoAudio().length) {
-            <optgroup label="Video + Audio" class="bg-slate-900 text-indigo-400 font-semibold">
-              @for (o of videoAudio(); track o.id) {
-              <option [value]="o.id" class="text-slate-200 py-2 bg-slate-800">
-                {{ o.label }}
-              </option>
-              }
-            </optgroup>
-            }
-
-            @if (videoOnly().length) {
-            <optgroup label="Video Only" class="bg-slate-900 text-fuchsia-400 font-semibold">
-              @for (o of videoOnly(); track o.id) {
-              <option [value]="o.id" class="text-slate-200 bg-slate-800">
-                {{ o.label }}
-              </option>
-              }
-            </optgroup>
-            }
-
-            @if (audioOnly().length) {
-            <optgroup label="Audio Only" class="bg-slate-900 text-emerald-400 font-semibold">
-              @for (o of audioOnly(); track o.id) {
-              <option [value]="o.id" class="text-slate-200 bg-slate-800">
-                {{ o.label }}
-              </option>
-              }
-            </optgroup>
-            }
-          </select>
-
-          <!-- Custom chevron arrow -->
-          <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-
-        <button (click)="startDownload()" [disabled]="!selectedOption()" class="w-full py-4 mt-2 rounded-2xl font-bold text-lg transition-all duration-300 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-800
-                   bg-indigo-500 hover:bg-indigo-400 text-white shadow-xl shadow-indigo-500/20">
-          Start Download
-        </button>
-      </div>
       }
 
-      <!-- Downloads List -->
-      @if ((jobs() | keyvalue).length > 0) {
-      <div class="mt-8 pt-8 border-t border-white/5 animate-in fade-in duration-500">
-        <h2 class="text-xl font-semibold text-white mb-4">Active Downloads</h2>
-        <div class="flex flex-col gap-3">
-          @for (job of jobs() | keyvalue; track job.key) {
-          <div class="p-4 rounded-xl bg-slate-800/50 border border-white/5 flex items-center justify-between">
-            <div>
-              @if (job.value.title || job.value.filename) {
-              <div class="text-white font-medium mb-1 truncate max-w-[50vw] sm:max-w-[300px]"
-                title="{{ job.value.title || job.value.filename }}">
-                {{ job.value.title || job.value.filename }}
+      <!-- Platform chips -->
+      <div class="mt-6 flex flex-wrap justify-center gap-2">
+        @for (p of ['YouTube', 'Vimeo', '100+ More']; track p) {
+          <span class="px-4 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant text-xs font-medium flex items-center gap-1">
+            <span class="material-symbols-outlined" style="font-size:14px">check_circle</span>
+            {{ p }}
+          </span>
+        }
+      </div>
+    </section>
+
+    <!-- Recent Activity -->
+    <section>
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="font-display text-xl font-semibold text-on-surface">Recent Activity</h3>
+        <div class="flex items-center gap-3">
+          @if (history().length > 0) {
+            <button (click)="clearAllHistory()" class="text-sm text-on-surface-variant hover:text-error flex items-center gap-1 transition-colors">
+              <span class="material-symbols-outlined" style="font-size:16px">delete_sweep</span>
+              Clear All
+            </button>
+          }
+          @if (history().length > 6) {
+            <button (click)="viewSvc.currentView.set('library')" class="text-sm font-medium text-primary flex items-center gap-1 hover:opacity-75 transition-opacity">
+              View All
+              <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (activeJobList().length === 0 && recentHistory().length === 0) {
+        <div class="flex flex-col items-center justify-center py-20 text-center">
+          <div class="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mb-4">
+            <span class="material-symbols-outlined text-on-surface-variant" style="font-size:32px">download</span>
+          </div>
+          <p class="text-base font-medium text-on-surface mb-1">No downloads yet</p>
+          <p class="text-sm text-on-surface-variant">Paste a URL above to get started</p>
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+          <!-- Active job cards -->
+          @for (job of activeJobList(); track job.id) {
+            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/40 flex flex-col hover:shadow-md transition-shadow">
+              <div class="flex justify-between items-start mb-4">
+                <div class="w-11 h-11 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center">
+                  <span class="material-symbols-outlined fill" style="font-size:22px">movie</span>
+                </div>
+                <span class="px-2.5 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  Active
+                </span>
               </div>
-              }
-              <div class="text-sm text-slate-400 mb-1 flex items-center gap-2">
-                <span>ID: {{ job.key.slice(0, 8) }}...</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-indigo-400 font-medium capitalize">{{ job.value.status }}</span>
-                @if(job.value.status === 'downloading') {
-                <span class="text-xs text-slate-500 animate-pulse">●</span>
+              <h4 class="font-semibold text-on-surface mb-1 truncate">{{ job.title || 'Download in progress' }}</h4>
+              <p class="text-sm text-on-surface-variant mb-5">{{ job.status }}</p>
+              <div class="mt-auto">
+                <div class="flex justify-between text-xs text-on-surface-variant mb-1.5">
+                  <span>{{ job.speed ?? 'Downloading…' }}</span>
+                  <span>{{ job.progress ?? '0%' }}</span>
+                </div>
+                <div class="w-full bg-surface-container-high rounded-full h-1.5 overflow-hidden">
+                  <div
+                    class="bg-primary h-1.5 rounded-full progress-animated transition-all"
+                    [style.width]="job.progress || '0%'">
+                  </div>
+                </div>
+                @if (job.status === 'downloading' || job.status === 'queued') {
+                  <button (click)="cancelJob(job.id)" class="mt-3 text-xs text-on-surface-variant hover:text-error transition-colors flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:14px">cancel</span> Cancel
+                  </button>
                 }
               </div>
             </div>
-            <div class="text-right flex items-center gap-4">
-              <div class="text-white font-mono font-bold">{{ job.value.progress }}</div>
-
-              @if (job.value.status === 'queued' || job.value.status === 'downloading') {
-              <button (click)="cancelJob(job.key)"
-                class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors"
-                title="Cancel Download">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clip-rule="evenodd" />
-                </svg>
-              </button>
-              }
-
-              @if (job.value.status === 'finished') {
-              <a [href]="getDownloadUrl(job.key)" target="_blank"
-                class="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
-                title="Save File">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </a>
-              }
-            </div>
-          </div>
           }
-        </div>
-      </div>
-      }
 
-      <!-- History List -->
-      @if (history().length > 0) {
-      <div class="mt-8 pt-8 border-t border-white/5 animate-in fade-in duration-500">
-        <h2 class="text-xl font-semibold text-white mb-4">Downloaded Files</h2>
-        <div class="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-          @for (job of history(); track job.filename) {
-          <div
-            class="p-4 rounded-xl bg-slate-800/30 border border-white/5 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
-            <div>
-              <div class="text-white font-medium mb-1 truncate max-w-[50vw] sm:max-w-[300px]"
-                title="{{ job.filename }}">
-                {{ job.filename }}
+          <!-- History cards -->
+          @for (item of recentHistory(); track item.id) {
+            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/40 flex flex-col hover:shadow-md transition-shadow">
+              <div class="flex justify-between items-start mb-4">
+                <div [class]="item.status === 'error' || item.status === 'cancelled'
+                  ? 'w-11 h-11 rounded-xl bg-error-container text-on-error-container flex items-center justify-center'
+                  : 'w-11 h-11 rounded-xl bg-surface-container-high text-on-surface-variant flex items-center justify-center'">
+                  <span class="material-symbols-outlined fill" style="font-size:22px">
+                    {{ item.status === 'error' || item.status === 'cancelled' ? 'error' : 'check_circle' }}
+                  </span>
+                </div>
+                <span [class]="item.status === 'error' || item.status === 'cancelled'
+                  ? 'px-2.5 py-1 bg-error-container text-on-error-container text-xs font-semibold rounded-full flex items-center gap-1'
+                  : 'px-2.5 py-1 bg-surface-container text-on-surface-variant text-xs font-semibold rounded-full flex items-center gap-1'">
+                  <span class="material-symbols-outlined" style="font-size:12px">
+                    {{ item.status === 'error' || item.status === 'cancelled' ? 'close' : 'done' }}
+                  </span>
+                  {{ getStatusLabel(item.status) }}
+                </span>
               </div>
-              <div class="text-sm text-emerald-400 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd" />
-                </svg>
-                <span>Completed</span>
+              <h4 class="font-semibold text-on-surface mb-1 truncate" [title]="getDisplayName(item.filename)">
+                {{ getDisplayName(item.filename) }}
+              </h4>
+              <p class="text-sm text-on-surface-variant mb-5">
+                @if (item.error) { {{ item.error }} }
+              </p>
+              <div class="mt-auto flex gap-2">
+                @if (item.status === 'finished') {
+                  <button (click)="openFile(item.id || '')"
+                     class="flex-1 py-2 bg-surface-container-high text-on-surface text-sm font-medium hover:bg-surface-container rounded-xl flex justify-center items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:16px">folder_open</span> Show
+                  </button>
+                }
+                @if (item.status === 'error' || item.status === 'cancelled') {
+                  <button (click)="viewSvc.currentView.set('dashboard')"
+                     class="flex-1 py-2 bg-surface-container text-on-surface text-sm font-medium hover:bg-surface-container-high rounded-xl flex justify-center items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:16px">refresh</span> Retry
+                  </button>
+                }
+                <button (click)="deleteHistoryJob(item.id || '')"
+                   class="p-2 bg-surface-container text-on-surface-variant hover:bg-error-container hover:text-on-error-container rounded-xl transition-colors">
+                  <span class="material-symbols-outlined" style="font-size:16px">delete</span>
+                </button>
               </div>
             </div>
-
-            <div class="flex items-center gap-3">
-              <!-- Download Button -->
-              <a [href]="getDownloadUrl(job.id || '')" target="_blank"
-                class="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
-                title="Save File">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </a>
-
-              <!-- Delete Button -->
-              <button (click)="deleteHistoryJob(job.id || '')"
-                class="p-2 rounded-lg bg-slate-700/50 hover:bg-red-500/20 text-slate-400 hover:text-red-500 transition-colors"
-                title="Delete File">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
           }
-        </div>
-      </div>
-      }
 
+        </div>
+      }
+    </section>
+  }
+
+  <!-- ══════════════════════════════════════════
+       CONFIGURE VIEW
+  ══════════════════════════════════════════ -->
+  @if (viewSvc.currentView() === 'configure') {
+    <div class="flex flex-col h-[calc(100vh-64px)] overflow-hidden pt-6 pb-4">
+
+    <!-- Back -->
+    <div class="flex items-center gap-3 mb-2 shrink-0">
+      <button (click)="backToDashboard()" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
+      </button>
+      <span class="text-sm text-on-surface-variant">Back to Dashboard</span>
     </div>
-  </div>
+
+    <h2 class="font-display text-3xl font-semibold text-on-surface mb-1 shrink-0">Configure Download</h2>
+    <p class="text-base text-on-surface-variant mb-4 shrink-0">Select format and quality before starting the download.</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+
+      <!-- Left: Video info card + Download button (static) -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        <div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30">
+          <!-- Thumbnail -->
+          <div class="aspect-video bg-gradient-to-br from-surface-container-high to-surface-container-highest flex items-center justify-center overflow-hidden">
+            @if (currentThumbnail()) {
+              <img [src]="currentThumbnail()" alt="Video thumbnail"
+                   class="w-full h-full object-cover"
+                   (error)="currentThumbnail.set('')" />
+            } @else {
+              <span class="material-symbols-outlined text-on-surface-variant" style="font-size:64px; opacity:0.4">movie</span>
+            }
+          </div>
+          <div class="p-6">
+            <h3 class="font-semibold text-on-surface text-lg leading-snug line-clamp-2 mb-3">
+              {{ currentTitle() || 'Video' }}
+            </h3>
+            <div class="flex items-center gap-2 px-3 py-2.5 bg-surface-container rounded-xl border border-outline-variant/30">
+              <span class="material-symbols-outlined text-outline" style="font-size:16px">link</span>
+              <span class="text-sm text-on-surface-variant truncate flex-1">{{ url() }}</span>
+              <button (click)="clearUrl(); backToDashboard()" class="text-on-surface-variant hover:text-on-surface transition-colors ml-1">
+                <span class="material-symbols-outlined" style="font-size:16px">close</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Start Download -->
+        <button
+          (click)="startDownload()"
+          [disabled]="!selectedOption()"
+          class="w-full py-4 rounded-2xl text-sm font-semibold bg-primary text-on-primary hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity shadow-sm flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined fill" style="font-size:18px">download</span>
+          Start Download
+        </button>
+      </div>
+
+      <!-- Right: Config options (independently scrollable) -->
+      <div class="lg:col-span-7 flex flex-col gap-4 overflow-y-auto pr-1">
+
+        <!-- Format type selection -->
+        <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/30">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <span class="material-symbols-outlined" style="font-size:18px">folder_zip</span>
+            </div>
+            <h3 class="font-semibold text-on-surface">Select Format</h3>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            @if (videoAudio().length) {
+              <button
+                (click)="formatTab.set('video_audio'); selectedOption.set(null)"
+                [class]="formatTab() === 'video_audio'
+                  ? 'border-2 border-primary bg-secondary-container/30 rounded-2xl p-4 text-left transition-all'
+                  : 'border-2 border-surface-variant rounded-2xl p-4 text-left hover:border-primary/40 transition-all'">
+                <div class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-surface-variant text-on-surface-variant inline-block mb-2">MP4</div>
+                <div class="text-sm font-semibold text-on-surface">Video + Audio</div>
+                <div class="text-xs text-on-surface-variant mt-0.5">Best compatibility</div>
+              </button>
+            }
+            @if (videoOnly().length) {
+              <button
+                (click)="formatTab.set('video_only'); selectedOption.set(null)"
+                [class]="formatTab() === 'video_only'
+                  ? 'border-2 border-primary bg-secondary-container/30 rounded-2xl p-4 text-left transition-all'
+                  : 'border-2 border-surface-variant rounded-2xl p-4 text-left hover:border-primary/40 transition-all'">
+                <div class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-surface-variant text-on-surface-variant inline-block mb-2">MKV</div>
+                <div class="text-sm font-semibold text-on-surface">Video Only</div>
+                <div class="text-xs text-on-surface-variant mt-0.5">No audio stream</div>
+              </button>
+            }
+            @if (audioOnly().length) {
+              <button
+                (click)="formatTab.set('audio'); selectedOption.set(null)"
+                [class]="formatTab() === 'audio'
+                  ? 'border-2 border-primary bg-secondary-container/30 rounded-2xl p-4 text-left transition-all'
+                  : 'border-2 border-surface-variant rounded-2xl p-4 text-left hover:border-primary/40 transition-all'">
+                <div class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-surface-variant text-on-surface-variant inline-block mb-2">MP3</div>
+                <div class="text-sm font-semibold text-on-surface">Audio Only</div>
+                <div class="text-xs text-on-surface-variant mt-0.5">High-quality audio</div>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Quality selection -->
+        <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/30">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <span class="material-symbols-outlined" style="font-size:18px">high_quality</span>
+            </div>
+            <h3 class="font-semibold text-on-surface">Resolution & Quality</h3>
+          </div>
+
+          <div class="space-y-2">
+            @for (opt of currentOptions(); track opt.id) {
+              <label
+                [class]="selectedOption() === opt.id
+                  ? 'flex items-center p-4 border-2 border-primary bg-secondary-container/20 rounded-2xl cursor-pointer transition-colors'
+                  : 'flex items-center p-4 border-2 border-transparent bg-surface hover:bg-surface-container-high rounded-2xl cursor-pointer transition-colors'">
+                <input type="radio" name="quality" [value]="opt.id" class="sr-only"
+                  (change)="selectedOption.set(opt.id)" [checked]="selectedOption() === opt.id">
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-on-surface truncate">{{ opt.label }}</div>
+                  @if (opt.size) {
+                    <div class="text-xs text-on-surface-variant mt-0.5">{{ opt.size }}</div>
+                  }
+                </div>
+                @if (selectedOption() === opt.id) {
+                  <span class="material-symbols-outlined fill text-primary ml-3 shrink-0" style="font-size:20px">check_circle</span>
+                }
+              </label>
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════
+       QUEUE VIEW
+  ══════════════════════════════════════════ -->
+  @if (viewSvc.currentView() === 'queue') {
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-surface-variant mb-6">
+      <div>
+        <h2 class="font-display text-3xl font-semibold text-on-surface mb-1">Active Queue</h2>
+        <p class="text-base text-on-surface-variant">{{ activeJobCount() }} item{{ activeJobCount() !== 1 ? 's' : '' }} in progress.</p>
+      </div>
+    </div>
+
+    @if (activeJobList().length === 0) {
+      <div class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mb-4">
+          <span class="material-symbols-outlined text-on-surface-variant" style="font-size:32px">hourglass_empty</span>
+        </div>
+        <p class="text-base font-medium text-on-surface mb-1">No active downloads</p>
+        <p class="text-sm text-on-surface-variant mb-5">Paste a URL on the Dashboard to start</p>
+        <button (click)="viewSvc.currentView.set('dashboard')"
+          class="px-5 py-2.5 rounded-full bg-primary text-on-primary text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm flex items-center gap-2">
+          <span class="material-symbols-outlined" style="font-size:16px">add</span>
+          New Download
+        </button>
+      </div>
+    } @else {
+
+      <div class="flex flex-col gap-4">
+        @for (job of activeJobList(); track job.id) {
+          <div class="bg-surface-container-lowest/80 backdrop-blur-sm rounded-2xl p-5 md:p-6 flex flex-col md:flex-row gap-5 shadow-sm border border-outline-variant/30 hover:shadow-md transition-shadow">
+
+            <!-- Icon / thumbnail placeholder -->
+            <div class="w-full md:w-44 h-28 rounded-xl bg-gradient-to-br from-surface-container to-surface-container-high shrink-0 relative overflow-hidden flex items-center justify-center">
+              <span class="material-symbols-outlined text-on-surface-variant" style="font-size:40px; opacity:0.3">movie</span>
+              @if (job.status === 'queued') {
+                <div class="absolute inset-0 bg-surface/50 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-on-surface-variant" style="font-size:28px">schedule</span>
+                </div>
+              }
+            </div>
+
+            <!-- Info -->
+            <div class="flex-1 flex flex-col justify-center min-w-0">
+              <div class="flex justify-between items-start gap-4 mb-2">
+                <h3 class="font-semibold text-on-surface truncate">{{ job.title || 'Download #' + job.id.slice(0,8) }}</h3>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  @if (job.status === 'downloading' || job.status === 'queued') {
+                    <button (click)="cancelJob(job.id)"
+                      class="w-9 h-9 rounded-full flex items-center justify-center text-error hover:bg-error-container transition-colors"
+                      title="Cancel">
+                      <span class="material-symbols-outlined" style="font-size:18px">close</span>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="flex items-center flex-wrap gap-3 mb-3 text-sm text-on-surface-variant">
+                @if (job.speed) {
+                  <span class="flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:14px">speed</span>
+                    {{ job.speed }}
+                  </span>
+                }
+                @if (job.eta) {
+                  <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+                  <span class="flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:14px">schedule</span>
+                    {{ job.eta }} left
+                  </span>
+                }
+                @if (job.status === 'queued') {
+                  <span class="flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:14px">pending</span>
+                    Queued
+                  </span>
+                }
+                @if (job.status === 'error') {
+                  <span class="text-error">{{ job.error || 'An error occurred' }}</span>
+                }
+              </div>
+
+              <div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all"
+                  [class]="job.status === 'downloading' ? 'bg-primary progress-animated' : 'bg-outline'"
+                  [style.width]="job.status === 'error' ? '100%' : (job.progress || '0%')">
+                </div>
+              </div>
+              <div class="flex justify-between text-xs text-on-surface-variant mt-1.5">
+                <span class="capitalize">{{ getStatusLabel(job.status) }}</span>
+                <span>{{ job.progress ?? '0%' }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- ══════════════════════════════════════════
+       LIBRARY VIEW
+  ══════════════════════════════════════════ -->
+  @if (viewSvc.currentView() === 'library') {
+
+    <div class="pb-6 border-b border-surface-variant mb-6">
+      <h2 class="font-display text-3xl font-semibold text-on-surface mb-1">Library</h2>
+      <p class="text-base text-on-surface-variant">{{ history().length }} completed download{{ history().length !== 1 ? 's' : '' }}</p>
+    </div>
+
+    @if (history().length === 0) {
+      <div class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mb-4">
+          <span class="material-symbols-outlined text-on-surface-variant" style="font-size:32px">video_library</span>
+        </div>
+        <p class="text-base font-medium text-on-surface mb-1">Library is empty</p>
+        <p class="text-sm text-on-surface-variant">Completed downloads will appear here</p>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-3">
+        @for (item of history(); track item.id) {
+          <div class="bg-surface-container-lowest rounded-2xl px-5 py-4 border border-outline-variant/30 flex items-center gap-4 hover:shadow-sm transition-shadow">
+            <div [class]="item.status === 'error' || item.status === 'cancelled'
+              ? 'w-10 h-10 rounded-xl bg-error-container text-on-error-container flex items-center justify-center shrink-0'
+              : 'w-10 h-10 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0'">
+              <span class="material-symbols-outlined fill" style="font-size:20px">
+                {{ item.status === 'error' || item.status === 'cancelled' ? 'error' : 'check_circle' }}
+              </span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-on-surface truncate text-sm" [title]="getDisplayName(item.filename)">
+                {{ getDisplayName(item.filename) }}
+              </div>
+              <div [class]="item.status === 'error' ? 'text-xs text-error mt-0.5' : 'text-xs text-on-surface-variant mt-0.5'">
+                {{ item.error || getStatusLabel(item.status) }}
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              @if (item.status === 'finished') {
+                <button (click)="openFile(item.id || '')"
+                   class="p-2 rounded-xl bg-surface-container-high text-on-surface hover:bg-secondary-container hover:text-on-secondary-container transition-colors"
+                   title="Show in folder">
+                  <span class="material-symbols-outlined" style="font-size:18px">folder_open</span>
+                </button>
+              }
+              <button (click)="deleteHistoryJob(item.id || '')"
+                class="p-2 rounded-xl bg-surface-container-high text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors"
+                title="Delete">
+                <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
 </div>

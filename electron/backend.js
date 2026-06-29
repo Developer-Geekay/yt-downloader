@@ -1,106 +1,73 @@
+'use strict';
 const { spawn } = require('child_process');
 const path = require('path');
-const net = require('net');
+const net  = require('net');
 const http = require('http');
-const fs = require('fs');
+const fs   = require('fs');
 
 class BackendManager {
   constructor() {
-    this.process = null;
-    this.port = null;
-    this._stopping = false;
-    this.maxRetries = 3;
-    this.retryCount = 0;
+    this.process     = null;
+    this.port        = null;
+    this._stopping   = false;
+    this.maxRetries  = 3;
+    this.retryCount  = 0;
     this._startConfig = null;
   }
 
-  /**
-   * Resolve the project root regardless of whether running inside an ASAR archive
-   * (packaged app) or directly from source (development).
-   */
+  /** Resolve the project root whether inside an ASAR archive or in dev. */
   _getProjectRoot() {
-    // __dirname inside a packaged .asar archive contains '.asar'
     if (__dirname.includes('.asar')) {
-      // Unpacked files live alongside app.asar in app.asar.unpacked/
       return path.join(process.resourcesPath, 'app.asar.unpacked');
     }
-    // Development: electron/ is one level below the project root
     return path.join(__dirname, '..');
   }
 
-  /**
-   * Find the Python executable.
-   * Priority: bundled resources/python → project venv → system Python.
-   */
-  _findPython(projectRoot) {
+  /** Find the bundled Node.js binary. Falls back to the Electron host's node. */
+  _findNode(projectRoot) {
     const isWin = process.platform === 'win32';
-
-    // 1. Bundled Python (resources/python) — produced by bundle-python.js
-    //    python-build-standalone uses 'python3' on unix, 'python.exe' on windows.
-    const bundledCandidates = isWin
-      ? [path.join(projectRoot, 'resources', 'python', 'python.exe')]
-      : [
-          path.join(projectRoot, 'resources', 'python', 'bin', 'python3'),
-          path.join(projectRoot, 'resources', 'python', 'bin', 'python'),
-        ];
-
-    for (const p of bundledCandidates) {
-      if (fs.existsSync(p)) return p;
-    }
-
-    // 2. Project virtual environments (development fallback)
-    const backendDir = path.join(projectRoot, 'backend');
-    const venvNames = ['.ytenv', '.venv', 'venv'];
-    for (const name of venvNames) {
-      const venvPath = isWin
-        ? path.join(backendDir, name, 'Scripts', 'python.exe')
-        : path.join(backendDir, name, 'bin', 'python');
-      if (fs.existsSync(venvPath)) return venvPath;
-    }
-
-    // 3. System Python
-    return isWin ? 'python' : 'python3';
+    const bundled = path.join(projectRoot, 'resources', 'node', isWin ? 'node.exe' : 'node');
+    if (fs.existsSync(bundled)) return bundled;
+    // Dev fallback: use the node that is running this Electron process
+    // (Electron embeds node, but for spawning scripts we need a plain node)
+    const systemNode = isWin ? 'node.exe' : 'node';
+    return systemNode;
   }
 
-  /**
-   * Find the FFmpeg executable.
-   * Priority: bundled resources/ffmpeg → system ffmpeg.
-   */
-  _findFFmpeg(projectRoot) {
-    const isWin = process.platform === 'win32';
-    const binaryName = isWin ? 'ffmpeg.exe' : 'ffmpeg';
-    const bundledPath = path.join(projectRoot, 'resources', 'ffmpeg', binaryName);
-    if (fs.existsSync(bundledPath)) return bundledPath;
-
-    // Recursive search inside resources/ffmpeg (handles subdirectory layouts)
-    const ffmpegDir = path.join(projectRoot, 'resources', 'ffmpeg');
-    if (fs.existsSync(ffmpegDir)) {
-      const found = this._findInDir(ffmpegDir, binaryName);
+  _findResource(projectRoot, subdir, binaryName, fallback = null) {
+    const bundled = path.join(projectRoot, 'resources', subdir, binaryName);
+    if (fs.existsSync(bundled)) return bundled;
+    const dir = path.join(projectRoot, 'resources', subdir);
+    if (fs.existsSync(dir)) {
+      const found = this._findInDir(dir, binaryName);
       if (found) return found;
     }
+    return fallback;
+  }
 
-    return 'ffmpeg'; // system fallback
+  _findFFmpeg(projectRoot) {
+    const n = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+    return this._findResource(projectRoot, 'ffmpeg', n, 'ffmpeg');
+  }
+
+  _findYtdlp(projectRoot) {
+    const n = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
+    return this._findResource(projectRoot, 'yt-dlp', n, 'yt-dlp');
   }
 
   _findInDir(dir, name) {
     try {
       for (const entry of fs.readdirSync(dir)) {
         const full = path.join(dir, entry);
-        const stat = fs.statSync(full);
-        if (stat.isDirectory()) {
+        if (fs.statSync(full).isDirectory()) {
           const found = this._findInDir(full, name);
           if (found) return found;
-        } else if (entry === name) {
-          return full;
-        }
+        } else if (entry === name) return full;
       }
     } catch (_) {}
     return null;
   }
 
-  /**
-   * Find an available TCP port starting from preferred.
-   */
   async findAvailablePort(preferred = 8000) {
     return new Promise((resolve, reject) => {
       const server = net.createServer();
@@ -109,108 +76,64 @@ class BackendManager {
         server.close(() => resolve(port));
       });
       server.on('error', () => {
-        if (preferred < 65535) {
-          this.findAvailablePort(preferred + 1).then(resolve).catch(reject);
-        } else {
-          reject(new Error('No available ports'));
-        }
+        preferred < 65535
+          ? this.findAvailablePort(preferred + 1).then(resolve).catch(reject)
+          : reject(new Error('No available ports'));
       });
     });
   }
 
-  /**
-   * Check installed dependencies (Python, FFmpeg, Node).
-   * Used by the setup page to display status.
-   */
   async checkDependencies() {
     const projectRoot = this._getProjectRoot();
-    const deps = {
-      python: { found: false, version: null, path: null },
-      ffmpeg: { found: false, version: null, path: null },
-      node:   { found: true,  version: process.version, path: process.execPath },
+    return {
+      node:   { found: true,  version: process.version,                              path: this._findNode(projectRoot) },
+      ffmpeg: { found: fs.existsSync(this._findFFmpeg(projectRoot)),                 path: this._findFFmpeg(projectRoot) },
+      ytdlp:  { found: fs.existsSync(this._findResource(projectRoot, 'yt-dlp',
+                  process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp') || ''), path: this._findYtdlp(projectRoot) },
     };
-
-    const pythonPath = this._findPython(projectRoot);
-    try {
-      const result = spawn(pythonPath, ['--version']);
-      const output = await this._readOutput(result);
-      deps.python.found = true;
-      deps.python.version = output.trim();
-      deps.python.path = pythonPath;
-    } catch (_) {}
-
-    const ffmpegPath = this._findFFmpeg(projectRoot);
-    try {
-      const result = spawn(ffmpegPath, ['-version']);
-      const output = await this._readOutput(result);
-      deps.ffmpeg.found = true;
-      deps.ffmpeg.version = output.split('\n')[0].trim();
-      deps.ffmpeg.path = ffmpegPath;
-    } catch (_) {}
-
-    return deps;
   }
 
-  _readOutput(child) {
-    return new Promise((resolve) => {
-      let out = '';
-      child.stdout?.on('data', (d) => (out += d));
-      child.stderr?.on('data', (d) => (out += d));
-      child.on('close', () => resolve(out));
-      child.on('error', () => resolve(''));
-    });
-  }
-
-  /**
-   * Start the Python FastAPI backend as a child process.
-   * @param {object} config - { downloadPath, tempPath, dbPath }
-   * @returns {Promise<number>} port the backend is listening on
-   */
   async start(config = {}) {
     this._startConfig = config;
-    this._stopping = false;
+    this._stopping    = false;
     this.port = await this.findAvailablePort(8000);
 
-    const projectRoot = this._getProjectRoot();
-    const backendDir = path.join(projectRoot, 'backend');
-    const pythonCmd = this._findPython(projectRoot);
-    const ffmpegPath = this._findFFmpeg(projectRoot);
+    const projectRoot  = this._getProjectRoot();
+    const nodeBin      = this._findNode(projectRoot);
+    const serverScript = path.join(projectRoot, 'backend-node', 'server.js');
+    const ffmpegPath   = this._findFFmpeg(projectRoot);
+    const ytdlpPath    = this._findYtdlp(projectRoot);
+    const nodePath     = path.join(projectRoot, 'resources', 'node',
+                           process.platform === 'win32' ? 'node.exe' : 'node');
+
+    console.log(`Starting backend on port ${this.port}...`);
+    console.log(`  Node.js: ${nodeBin}`);
+    console.log(`  Script:  ${serverScript}`);
+    console.log(`  FFmpeg:  ${ffmpegPath}`);
+    console.log(`  yt-dlp:  ${ytdlpPath}`);
 
     return new Promise((resolve, reject) => {
-      console.log(`Starting backend on port ${this.port}...`);
-      console.log(`  Python: ${pythonCmd}`);
-      console.log(`  FFmpeg: ${ffmpegPath}`);
-
-      this.process = spawn(
-        pythonCmd,
-        ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(this.port), '--no-access-log'],
-        {
-          cwd: backendDir,
-          env: {
-            ...process.env,
-            ELECTRON_MODE: 'true',
-            ELECTRON_PORT: String(this.port),
-            PYTHONUNBUFFERED: '1',
-            // Pass user-configured paths to the backend
-            ...(config.downloadPath && { VD_DOWNLOAD_DIR: config.downloadPath }),
-            ...(config.tempPath    && { VD_TEMP_DIR:     config.tempPath }),
-            ...(config.dbPath      && { VD_DB_PATH:      config.dbPath }),
-            // Tell yt-dlp / backend where bundled FFmpeg lives
-            FFMPEG_LOCATION: ffmpegPath,
-          },
-          stdio: ['pipe', 'pipe', 'pipe'],
-          shell: false,
-        }
-      );
-
-      this.process.stdout.on('data', (data) => {
-        console.log(`[backend] ${data.toString().trim()}`);
-      });
-      this.process.stderr.on('data', (data) => {
-        console.error(`[backend] ${data.toString().trim()}`);
+      this.process = spawn(nodeBin, [serverScript], {
+        env: {
+          ...process.env,
+          NODE_NO_WARNINGS:  '1',
+          ELECTRON_MODE:     'true',
+          ELECTRON_PORT:     String(this.port),
+          FFMPEG_LOCATION:   ffmpegPath,
+          YTDLP_BINARY:      ytdlpPath,
+          ...(fs.existsSync(nodePath) && { NODE_BINARY: nodePath }),
+          ...(config.downloadPath && { VD_DOWNLOAD_DIR: config.downloadPath }),
+          ...(config.tempPath     && { VD_TEMP_DIR:     config.tempPath }),
+          ...(config.dbPath       && { VD_DB_PATH:      config.dbPath }),
+        },
+        stdio: ['pipe', 'pipe', 'pipe'],
+        shell: false,
       });
 
-      this.process.on('exit', (code) => {
+      this.process.stdout.on('data', d => console.log(`[backend] ${d.toString().trim()}`));
+      this.process.stderr.on('data', d => console.error(`[backend] ${d.toString().trim()}`));
+
+      this.process.on('exit', code => {
         console.log(`Backend exited with code ${code}`);
         if (!this._stopping && this.retryCount < this.maxRetries) {
           this.retryCount++;
@@ -219,53 +142,33 @@ class BackendManager {
         }
       });
 
-      this.process.on('error', (err) => {
+      this.process.on('error', err => {
         console.error('Failed to spawn backend:', err.message);
         reject(err);
       });
 
-      this._waitForHealth(this.port, 30000)
-        .then(() => {
-          this.retryCount = 0;
-          resolve(this.port);
-        })
+      this._waitForHealth(this.port, 30_000)
+        .then(() => { this.retryCount = 0; resolve(this.port); })
         .catch(reject);
     });
   }
 
-  /**
-   * Poll /health until the backend responds 200 or timeout expires.
-   */
-  _waitForHealth(port, timeoutMs = 30000) {
+  _waitForHealth(port, timeoutMs = 30_000) {
     const start = Date.now();
-    const interval = 500;
-
     return new Promise((resolve, reject) => {
       const check = () => {
-        if (Date.now() - start > timeoutMs) {
-          return reject(new Error('Backend health check timed out'));
-        }
-
-        const req = http.get(`http://127.0.0.1:${port}/health`, (res) => {
+        if (Date.now() - start > timeoutMs) return reject(new Error('Backend health check timed out'));
+        const req = http.get(`http://127.0.0.1:${port}/health`, res => {
           if (res.statusCode === 200) resolve();
-          else setTimeout(check, interval);
+          else setTimeout(check, 500);
         });
-
-        req.on('error', () => setTimeout(check, interval));
-        req.setTimeout(2000, () => {
-          req.destroy();
-          setTimeout(check, interval);
-        });
+        req.on('error', () => setTimeout(check, 500));
+        req.setTimeout(2000, () => { req.destroy(); setTimeout(check, 500); });
       };
-
-      // Give Python a moment to start before first check
-      setTimeout(check, 1000);
+      setTimeout(check, 500);
     });
   }
 
-  /**
-   * Gracefully stop the backend process.
-   */
   stop() {
     this._stopping = true;
     if (this.process) {

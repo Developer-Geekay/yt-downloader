@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, globalShortcut, shell } = require('electron');
 const path = require('path');
 const { BackendManager } = require('./backend');
 const { ConfigManager } = require('./config');
@@ -80,7 +80,7 @@ function createMainWindow() {
     minHeight: 600,
     show: false,
     title: 'Video Downloader',
-    backgroundColor: '#020617',
+    backgroundColor: '#f8f9fc',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -125,6 +125,7 @@ function createMenu() {
         { role: 'quit' }
       ]
     },
+    { role: 'editMenu' },
     { role: 'viewMenu' },
     { role: 'windowMenu' },
     {
@@ -158,6 +159,10 @@ function setupIPC() {
   ipcMain.handle('get-backend-port', () => backendManager.port || 8000);
   ipcMain.handle('get-app-version', () => app.getVersion());
   ipcMain.handle('is-configured', () => ConfigManager.isConfigured());
+  ipcMain.handle('get-app-config', () => ({
+    downloadPath: ConfigManager.get('downloadPath'),
+    tempPath: ConfigManager.get('tempPath'),
+  }));
   ipcMain.handle('check-dependencies', () => backendManager.checkDependencies());
 
   ipcMain.handle('restart-backend', async () => {
@@ -185,15 +190,30 @@ function setupIPC() {
 
   ipcMain.handle('save-setup-config', async (_, config) => {
     const success = ConfigManager.save(config);
-    if (success) {
-      // After setup, we need to start the backend
+    if (!success) return false;
+
+    if (backendManager.process) {
+      // Backend already running (settings update) — restart cleanly with new config
+      backendManager.stop();
+      await new Promise(r => setTimeout(r, 1000));
+      await backendManager.start({
+        downloadPath: ConfigManager.get('downloadPath'),
+        tempPath: ConfigManager.get('tempPath'),
+        dbPath: ConfigManager.getDbPath(),
+      });
+    } else {
+      // Initial setup — backend not yet running, start everything
       startBackendAndUI();
     }
-    return success;
+    return true;
   });
 
   ipcMain.handle('set-progress', (_, progress) => {
     if (mainWindow) mainWindow.setProgressBar(progress);
+  });
+
+  ipcMain.handle('show-in-folder', (_, filePath) => {
+    shell.showItemInFolder(filePath);
   });
 }
 

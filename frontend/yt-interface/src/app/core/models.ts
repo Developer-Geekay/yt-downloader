@@ -2,6 +2,7 @@ export interface OptionsResponse {
   options_id: string;
   title: string;
   duration: number;
+  thumbnail?: string;
   video_audio: OptionItem[];
   video_only: OptionItem[];
   audio: OptionItem[];

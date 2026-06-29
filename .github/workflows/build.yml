@@ -30,12 +30,11 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      # Cache the Python archive so subsequent runs skip the ~40 MB download
       - name: Cache bundled resources
         uses: actions/cache@v4
         with:
           path: cache/
-          key: bundled-resources-${{ runner.os }}-${{ runner.arch }}-py3.12.7
+          key: bundled-resources-${{ runner.os }}-${{ runner.arch }}-v1
 
       - name: Install Linux packaging dependencies
         if: matrix.platform == 'linux'
@@ -48,14 +47,14 @@ jobs:
         run: npm install
         working-directory: frontend/yt-interface
 
-      # FFmpeg: ffmpeg-static (installed above) already has the right binary for this runner.
-      # bundle-ffmpeg.js copies it from node_modules → resources/ffmpeg/
       - name: Bundle FFmpeg
         run: node scripts/bundle-ffmpeg.js
 
-      # Downloads standalone Python + pip-installs all backend requirements
-      - name: Bundle Python
-        run: node scripts/bundle-python.js
+      - name: Bundle yt-dlp
+        run: node scripts/bundle-ytdlp.js
+
+      - name: Bundle Node.js runtime
+        run: node scripts/bundle-node.js
 
       - name: Build frontend
         run: npm run build:frontend

@@ -1,18 +1,132 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --color-brand-primary: #6366f1;
-  --color-brand-secondary: #a855f7;
-  --color-glass-surface: rgba(30, 41, 59, 0.7);
-  --color-glass-border: rgba(255, 255, 255, 0.1);
+  /* ── Lumina Modern — Material 3 Tonal Palette ── */
+  --color-primary: #004b71;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #006494;
+  --color-on-primary-container: #b6ddff;
+  --color-inverse-primary: #8ecdff;
+  --color-primary-fixed: #cbe6ff;
+  --color-primary-fixed-dim: #8ecdff;
+  --color-on-primary-fixed: #001e30;
+  --color-on-primary-fixed-variant: #004b71;
+
+  --color-secondary: #50606e;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d1e2f2;
+  --color-on-secondary-container: #546473;
+  --color-secondary-fixed: #d4e4f5;
+  --color-secondary-fixed-dim: #b8c8d9;
+  --color-on-secondary-fixed: #0d1d29;
+  --color-on-secondary-fixed-variant: #394956;
+
+  --color-tertiary: #52405f;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #6b5778;
+  --color-on-tertiary-container: #e9d0f7;
+  --color-tertiary-fixed: #f3daff;
+  --color-tertiary-fixed-dim: #d6bee4;
+  --color-on-tertiary-fixed: #251431;
+  --color-on-tertiary-fixed-variant: #523f5f;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-surface: #f8f9fc;
+  --color-surface-dim: #d9dadd;
+  --color-surface-bright: #f8f9fc;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f3f6;
+  --color-surface-container: #edeef1;
+  --color-surface-container-high: #e7e8eb;
+  --color-surface-container-highest: #e1e2e5;
+  --color-surface-variant: #e1e2e5;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #40484f;
+  --color-inverse-surface: #2e3133;
+  --color-inverse-on-surface: #eff1f4;
+
+  --color-outline: #707880;
+  --color-outline-variant: #c0c7d0;
+  --color-surface-tint: #006494;
+  --color-background: #f8f9fc;
+  --color-on-background: #191c1e;
+
+  /* ── Typography ── */
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+.material-symbols-outlined.fill {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 body {
-  @apply bg-slate-950 text-slate-200 antialiased font-sans min-h-screen selection:bg-indigo-500/30;
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.15) 0%, transparent 25%);
+  background-color: #f8f9fc;
+  color: #191c1e;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c0c7d0; border-radius: 999px; }
+
+/* Progress bar animation */
+@keyframes progress-stripe {
+  0% { background-position: 0 0; }
+  100% { background-position: 1rem 0; }
+}
+
+.progress-animated {
+  background-image: linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.25) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.25) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+  animation: progress-stripe 1s linear infinite;
+}
+
+/* Input pulse animation */
+@keyframes input-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 100, 148, 0.2); }
+  70% { box-shadow: 0 0 0 14px rgba(0, 100, 148, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 100, 148, 0); }
+}
+
+.url-input-wrap:focus-within {
+  animation: input-pulse 2s infinite;
 }

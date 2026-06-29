@@ -13,16 +13,21 @@ import { Router } from '@angular/router';
         <p>Let's get your application ready for the first use.</p>
 
         <section class="dependency-check">
-          <h3>System Dependencies</h3>
-          <div class="dep-item" [class.found]="deps().python.found">
+          <h3>Bundled Tools</h3>
+          <div class="dep-item" [class.found]="deps().node?.found">
             <span class="dot"></span>
-            <span class="name">Python</span>
-            <span class="status">{{ deps().python.found ? deps().python.version : 'Not Found (Will use bundled)' }}</span>
+            <span class="name">Node.js</span>
+            <span class="status">{{ deps().node?.found ? deps().node.version : 'Not Found' }}</span>
           </div>
-          <div class="dep-item" [class.found]="deps().ffmpeg.found">
+          <div class="dep-item" [class.found]="deps().ytdlp?.found">
+            <span class="dot"></span>
+            <span class="name">yt-dlp</span>
+            <span class="status">{{ deps().ytdlp?.found ? 'Found' : 'Not Found' }}</span>
+          </div>
+          <div class="dep-item" [class.found]="deps().ffmpeg?.found">
             <span class="dot"></span>
             <span class="name">FFmpeg</span>
-            <span class="status">{{ deps().ffmpeg.found ? 'Found' : 'Not Found (Will use bundled)' }}</span>
+            <span class="status">{{ deps().ffmpeg?.found ? 'Found' : 'Not Found' }}</span>
           </div>
         </section>
 
@@ -56,7 +61,7 @@ import { Router } from '@angular/router';
   `]
 })
 export class SetupComponent implements OnInit {
-  deps = signal<any>({ python: {}, ffmpeg: {}, node: {} });
+  deps = signal<any>({ node: {}, ytdlp: {}, ffmpeg: {} });
   downloadPath = signal<string>('');
 
   constructor(private router: Router) {}

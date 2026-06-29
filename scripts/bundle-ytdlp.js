@@ -1,33 +1,34 @@
 /**
- * Bundle FFmpeg — downloads the platform-correct FFmpeg static binary directly
- * from eugeneware/ffmpeg-static GitHub releases (tag b6.1.1 = FFmpeg 6.1.1).
+ * Bundle yt-dlp — downloads the standalone yt-dlp binary for the current platform
+ * from the official GitHub release (2026.06.09).
  *
- * Supports: darwin arm64 / x64, linux x64 / arm64, win32 x64
- * Output:   resources/ffmpeg/ffmpeg  (unix)
- *           resources/ffmpeg/ffmpeg.exe  (windows)
- * Cache:    cache/ffmpeg/
+ * Supports: darwin (universal), linux x64, linux arm64, win32 x64
+ * Output:   resources/yt-dlp/yt-dlp  (unix)
+ *           resources/yt-dlp/yt-dlp.exe  (windows)
+ * Cache:    cache/yt-dlp/
  *
- * Usage: node scripts/bundle-ffmpeg.js
+ * Usage: node scripts/bundle-ytdlp.js
  */
 
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const FFMPEG_TAG = 'b6.1.1';
-const BASE_URL = `https://github.com/eugeneware/ffmpeg-static/releases/download/${FFMPEG_TAG}`;
+const YTDLP_VERSION = '2026.06.09';
+const BASE_URL = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}`;
 
+// macOS universal binary works for both arm64 and x64
 const BINARY_MAP = {
-  'darwin-arm64': 'ffmpeg-darwin-arm64',
-  'darwin-x64':   'ffmpeg-darwin-x64',
-  'linux-x64':    'ffmpeg-linux-x64',
-  'linux-arm64':  'ffmpeg-linux-arm64',
-  'win32-x64':    'ffmpeg-win32-x64',
+  'darwin-arm64': 'yt-dlp_macos',
+  'darwin-x64':   'yt-dlp_macos',
+  'linux-x64':    'yt-dlp_linux',
+  'linux-arm64':  'yt-dlp_linux_aarch64',
+  'win32-x64':    'yt-dlp.exe',
 };
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const FFMPEG_DIR   = path.join(PROJECT_ROOT, 'resources', 'ffmpeg');
-const CACHE_DIR    = path.join(PROJECT_ROOT, 'cache', 'ffmpeg');
+const YTDLP_DIR  = path.join(PROJECT_ROOT, 'resources', 'yt-dlp');
+const CACHE_DIR  = path.join(PROJECT_ROOT, 'cache', 'yt-dlp');
 
 function downloadFile(url, dest) {
   const cacheFile = path.join(CACHE_DIR, path.basename(url));
@@ -103,23 +104,23 @@ async function main() {
     process.exit(1);
   }
 
-  const destName = isWin ? 'ffmpeg.exe' : 'ffmpeg';
-  const destPath = path.join(FFMPEG_DIR, destName);
+  const destName = isWin ? 'yt-dlp.exe' : 'yt-dlp';
+  const destPath = path.join(YTDLP_DIR, destName);
   const url = `${BASE_URL}/${remoteName}`;
 
-  console.log(`\nBundling FFmpeg (${FFMPEG_TAG}) for ${platformArch}...`);
+  console.log(`\nBundling yt-dlp ${YTDLP_VERSION} for ${platformArch}...`);
 
-  fs.mkdirSync(FFMPEG_DIR, { recursive: true });
+  fs.mkdirSync(YTDLP_DIR, { recursive: true });
 
   await downloadFile(url, destPath);
 
   if (!isWin) fs.chmodSync(destPath, 0o755);
 
   const sizeMB = (fs.statSync(destPath).size / 1024 / 1024).toFixed(1);
-  console.log(`  FFmpeg bundled: ${destPath} (${sizeMB} MB)`);
+  console.log(`  yt-dlp bundled: ${destPath} (${sizeMB} MB)`);
 }
 
 main().catch((err) => {
-  console.error('\nFailed to bundle FFmpeg:', err.message);
+  console.error('\nFailed to bundle yt-dlp:', err.message);
   process.exit(1);
 });

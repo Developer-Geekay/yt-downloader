@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Check if app is configured
   isConfigured: () => ipcRenderer.invoke('is-configured'),
 
-  // Check system dependencies (Python, FFmpeg)
+  // Check system dependencies (yt-dlp, FFmpeg, Node.js)
   checkDependencies: () => ipcRenderer.invoke('check-dependencies'),
 
   // Save setup configuration (first launch)
@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setProgress: (progress) => ipcRenderer.invoke('set-progress', progress),
 
 
+
+  // Reveal a file in Finder/Explorer
+  showInFolder: (filePath) => ipcRenderer.invoke('show-in-folder', filePath),
 
   // Check if running inside Electron
   isElectron: true,

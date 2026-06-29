@@ -13,6 +13,7 @@ declare global {
       isConfigured: () => Promise<boolean>;
       saveSetupConfig: (config: any) => Promise<boolean>;
       checkDependencies: () => Promise<any>;
+      showInFolder: (filePath: string) => Promise<void>;
       isElectron: boolean;
     };
   }
@@ -69,6 +70,10 @@ export class ApiService {
 
   getDownloadUrl(jobId: string) {
     return `${this.base}/api/file/${jobId}`;
+  }
+
+  getFilePath(jobId: string) {
+    return this.http.get<{ path: string }>(`${this.base}/api/filepath/${jobId}`);
   }
 
   getHistory() {
