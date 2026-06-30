@@ -37,6 +37,7 @@ function baseCmd() {
     config.YTDLP_BINARY,
     '--impersonate', 'chrome-136',
     '--socket-timeout', '30',
+    ...(config.PROXY ? ['--proxy', config.PROXY] : []),
   ];
   if (config.NODE_BINARY && fs.existsSync(config.NODE_BINARY)) {
     cmd.push('--js-runtimes', `node:${config.NODE_BINARY}`);

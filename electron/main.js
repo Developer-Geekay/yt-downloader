@@ -171,6 +171,7 @@ function setupIPC() {
     downloadPath:     ConfigManager.get('downloadPath'),
     tempPath:         ConfigManager.get('tempPath'),
     defaultSubtitles: ConfigManager.get('defaultSubtitles') ?? false,
+    proxy:            ConfigManager.get('proxy') ?? '',
   }));
   ipcMain.handle('check-dependencies', () => backendManager.checkDependencies());
 

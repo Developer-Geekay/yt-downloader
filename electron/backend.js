@@ -125,6 +125,7 @@ class BackendManager {
           ...(config.downloadPath && { VD_DOWNLOAD_DIR: config.downloadPath }),
           ...(config.tempPath     && { VD_TEMP_DIR:     config.tempPath }),
           ...(config.dbPath       && { VD_DB_PATH:      config.dbPath }),
+          ...(config.proxy        && { VD_PROXY:        config.proxy }),
         },
         stdio: ['pipe', 'pipe', 'pipe'],
         shell: false,

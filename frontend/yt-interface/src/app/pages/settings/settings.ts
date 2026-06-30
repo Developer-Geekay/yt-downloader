@@ -105,7 +105,9 @@ type SectionId = 'general' | 'downloads' | 'backend' | 'about';
 
         <!-- ════ DOWNLOADS ════ -->
         @if (activeSection() === 'downloads') {
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden">
+
+          <!-- Subtitles -->
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden mb-4">
             <div class="px-5 py-4 border-b border-outline-variant/20">
               <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">Subtitles</p>
             </div>
@@ -126,6 +128,44 @@ type SectionId = 'general' | 'downloads' | 'backend' | 'about';
                   : 'absolute top-0.5 left-0.5 w-5 h-5 bg-outline rounded-full shadow-sm transition-all duration-200'">
                 </span>
               </button>
+            </div>
+          </div>
+
+          <!-- Network / Proxy -->
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden">
+            <div class="px-5 py-4 border-b border-outline-variant/20">
+              <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">Network</p>
+            </div>
+            <div class="px-5 py-4">
+              <div class="flex items-start gap-3 mb-3">
+                <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                  <span class="material-symbols-outlined" style="font-size:18px">vpn_key</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold text-on-surface mb-0.5">Proxy</div>
+                  <div class="text-xs text-on-surface-variant">Route all downloads through a proxy. Useful for accessing geo-blocked sites.</div>
+                  <div class="text-xs text-on-surface-variant/70 mt-0.5 font-mono">e.g. socks5://127.0.0.1:1080 &nbsp;·&nbsp; http://proxy:3128</div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Leave empty to disable"
+                  [value]="proxy()"
+                  (input)="proxy.set($any($event.target).value)"
+                  (keydown.enter)="saveProxy()"
+                  class="flex-1 bg-surface-container border border-outline-variant text-on-surface rounded-xl py-2.5 px-3.5 text-sm font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-outline transition-all" />
+                <button (click)="saveProxy()" [disabled]="savingProxy()"
+                  class="px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:opacity-90 disabled:opacity-50 active:scale-95 transition-all shrink-0">
+                  {{ savingProxy() ? 'Saving…' : 'Save' }}
+                </button>
+              </div>
+              @if (proxy()) {
+                <div class="mt-2 flex items-center gap-1.5 text-xs text-amber-600">
+                  <span class="material-symbols-outlined" style="font-size:13px">info</span>
+                  Restart the backend after changing the proxy for it to take effect.
+                </div>
+              }
             </div>
           </div>
         }
@@ -258,6 +298,8 @@ export class SettingsComponent implements OnInit {
   version             = signal('');
   backendStatus       = signal<'online' | 'offline' | 'checking'>('checking');
   defaultSubtitles    = signal(false);
+  proxy               = signal('');
+  savingProxy         = signal(false);
   confirmClearHistory = signal(false);
   restarting          = signal(false);
   toast               = signal<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -276,6 +318,7 @@ export class SettingsComponent implements OnInit {
       if (version) this.version.set(version);
       if (config?.downloadPath)    this.downloadPath.set(config.downloadPath);
       if (config?.defaultSubtitles !== undefined) this.defaultSubtitles.set(config.defaultSubtitles);
+      if (config?.proxy !== undefined) this.proxy.set(config.proxy ?? '');
     } catch {}
     this.pingBackend();
   }
@@ -295,6 +338,15 @@ export class SettingsComponent implements OnInit {
       await (window as any).electronAPI?.saveSetupConfig?.({ downloadPath: path });
       this.showToast('Download folder updated');
     }
+  }
+
+  async saveProxy() {
+    this.savingProxy.set(true);
+    const value = this.proxy().trim();
+    this.proxy.set(value);
+    await (window as any).electronAPI?.saveSetupConfig?.({ proxy: value || null });
+    this.savingProxy.set(false);
+    this.showToast(value ? 'Proxy saved — restart backend to apply' : 'Proxy cleared');
   }
 
   async toggleDefaultSubtitles() {
