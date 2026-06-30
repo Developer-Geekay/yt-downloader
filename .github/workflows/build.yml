@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -88,4 +89,5 @@ jobs:
             release/*.deb
             release/*.zip
             release/*.blockmap
+            release/*.yml
 
