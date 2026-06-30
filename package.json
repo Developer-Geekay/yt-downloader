@@ -1,6 +1,6 @@
 {
   "name": "private-video-downloader",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A standalone desktop video downloader powered by Electron, Angular, and yt-dlp",
   "main": "electron/main.js",
   "private": true,
@@ -58,11 +58,16 @@
       "resources/node/**/*"
     ],
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "assets/icon.ico"
     },
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "icon": "assets/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
@@ -73,7 +78,11 @@
       }
     },
     "linux": {
-      "target": ["AppImage", "deb", "portable"],
+      "target": [
+        "AppImage",
+        "deb",
+        "portable"
+      ],
       "icon": "assets/icon.png"
     }
   }
