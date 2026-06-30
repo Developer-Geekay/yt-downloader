@@ -229,36 +229,33 @@
               <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">Format</p>
             </div>
             <div class="grid grid-cols-3 gap-2 p-3">
-              @if (videoAudio().length) {
-                <button (click)="formatTab.set('video_audio'); selectedOption.set(null)"
-                  class="flex flex-col items-center py-3 rounded-xl transition-all"
-                  [class]="formatTab() === 'video_audio' ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-surface-container hover:bg-surface-container-high'">
-                  <span class="material-symbols-outlined mb-1" style="font-size:20px"
-                    [class]="formatTab() === 'video_audio' ? 'text-primary fill' : 'text-on-surface-variant'">video_file</span>
-                  <span class="text-xs font-bold" [class]="formatTab() === 'video_audio' ? 'text-primary' : 'text-on-surface'">MP4</span>
-                  <span class="text-[10px] text-on-surface-variant mt-0.5 leading-tight text-center">Video + Audio</span>
-                </button>
-              }
-              @if (videoOnly().length) {
-                <button (click)="formatTab.set('video_only'); selectedOption.set(null)"
-                  class="flex flex-col items-center py-3 rounded-xl transition-all"
-                  [class]="formatTab() === 'video_only' ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-surface-container hover:bg-surface-container-high'">
-                  <span class="material-symbols-outlined mb-1" style="font-size:20px"
-                    [class]="formatTab() === 'video_only' ? 'text-primary fill' : 'text-on-surface-variant'">movie</span>
-                  <span class="text-xs font-bold" [class]="formatTab() === 'video_only' ? 'text-primary' : 'text-on-surface'">Video</span>
-                  <span class="text-[10px] text-on-surface-variant mt-0.5 leading-tight text-center">No audio</span>
-                </button>
-              }
-              @if (audioOnly().length) {
-                <button (click)="formatTab.set('audio'); selectedOption.set(null)"
-                  class="flex flex-col items-center py-3 rounded-xl transition-all"
-                  [class]="formatTab() === 'audio' ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-surface-container hover:bg-surface-container-high'">
-                  <span class="material-symbols-outlined mb-1" style="font-size:20px"
-                    [class]="formatTab() === 'audio' ? 'text-primary fill' : 'text-on-surface-variant'">audio_file</span>
-                  <span class="text-xs font-bold" [class]="formatTab() === 'audio' ? 'text-primary' : 'text-on-surface'">Audio</span>
-                  <span class="text-[10px] text-on-surface-variant mt-0.5 leading-tight text-center">MP3 / M4A</span>
-                </button>
-              }
+              <button (click)="videoAudio().length && formatTab.set('video_audio'); videoAudio().length && selectedOption.set(null)"
+                class="flex flex-col items-center py-3 rounded-xl transition-all"
+                [disabled]="!videoAudio().length"
+                [class]="!videoAudio().length ? 'bg-surface-container/40 opacity-40 cursor-not-allowed' : formatTab() === 'video_audio' ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-surface-container hover:bg-surface-container-high'">
+                <span class="material-symbols-outlined mb-1" style="font-size:20px"
+                  [class]="formatTab() === 'video_audio' && videoAudio().length ? 'text-primary fill' : 'text-on-surface-variant'">video_file</span>
+                <span class="text-xs font-bold" [class]="formatTab() === 'video_audio' && videoAudio().length ? 'text-primary' : 'text-on-surface'">MP4</span>
+                <span class="text-[10px] text-on-surface-variant mt-0.5 leading-tight text-center">Video + Audio</span>
+              </button>
+              <button (click)="videoOnly().length && formatTab.set('video_only'); videoOnly().length && selectedOption.set(null)"
+                class="flex flex-col items-center py-3 rounded-xl transition-all"
+                [disabled]="!videoOnly().length"
+                [class]="!videoOnly().length ? 'bg-surface-container/40 opacity-40 cursor-not-allowed' : formatTab() === 'video_only' ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-surface-container hover:bg-surface-container-high'">
+                <span class="material-symbols-outlined mb-1" style="font-size:20px"
+                  [class]="formatTab() === 'video_only' && videoOnly().length ? 'text-primary fill' : 'text-on-surface-variant'">movie</span>
+                <span class="text-xs font-bold" [class]="formatTab() === 'video_only' && videoOnly().length ? 'text-primary' : 'text-on-surface'">Video</span>
+                <span class="text-[10px] text-on-surface-variant mt-0.5 leading-tight text-center">No audio</span>
+              </button>
+              <button (click)="audioOnly().length && formatTab.set('audio'); audioOnly().length && selectedOption.set(null)"
+                class="flex flex-col items-center py-3 rounded-xl transition-all"
+                [disabled]="!audioOnly().length"
+                [class]="!audioOnly().length ? 'bg-surface-container/40 opacity-40 cursor-not-allowed' : formatTab() === 'audio' ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-surface-container hover:bg-surface-container-high'">
+                <span class="material-symbols-outlined mb-1" style="font-size:20px"
+                  [class]="formatTab() === 'audio' && audioOnly().length ? 'text-primary fill' : 'text-on-surface-variant'">audio_file</span>
+                <span class="text-xs font-bold" [class]="formatTab() === 'audio' && audioOnly().length ? 'text-primary' : 'text-on-surface'">Audio</span>
+                <span class="text-[10px] text-on-surface-variant mt-0.5 leading-tight text-center">MP3 / M4A</span>
+              </button>
             </div>
           </div>
 
