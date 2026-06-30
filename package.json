@@ -4,6 +4,10 @@
   "description": "A standalone desktop video downloader powered by Electron, Angular, and yt-dlp",
   "main": "electron/main.js",
   "private": true,
+  "author": {
+    "name": "Developer-Geekay",
+    "email": "developergeekay@gmail.com"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/Developer-Geekay/yt-downloader.git"
@@ -70,10 +74,6 @@
         "zip"
       ],
       "icon": "assets/icon.icns",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "electron/entitlements.mac.plist",
-      "entitlementsInherit": "electron/entitlements.mac.plist",
       "notarize": false
     },
     "linux": {
